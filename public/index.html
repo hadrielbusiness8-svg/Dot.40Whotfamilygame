@@ -28,11 +28,11 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 24px;
+      padding: 10px 20px;
     }
 
     .brand-title {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 900;
       color: #facc15;
       letter-spacing: 1px;
@@ -48,9 +48,9 @@
       background: #1e3a29;
       border: 1px solid #34d399;
       color: #ffffff;
-      padding: 6px 16px;
+      padding: 6px 14px;
       border-radius: 20px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       transition: all 0.3s;
     }
@@ -61,8 +61,8 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 10px;
-      padding: 8px;
+      gap: 8px;
+      padding: 6px;
       flex-wrap: wrap;
     }
 
@@ -70,9 +70,9 @@
       background: #15803d;
       color: #ffffff;
       border: 1px solid #4ade80;
-      padding: 6px 14px;
-      border-radius: 12px;
-      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 11px;
       font-weight: bold;
       cursor: pointer;
       outline: none;
@@ -100,8 +100,8 @@
       display: none;
       background: #1e3a29;
       border-bottom: 2px solid #facc15;
-      padding: 8px 16px;
-      font-size: 12px;
+      padding: 6px 12px;
+      font-size: 11px;
       color: #86efac;
       text-align: center;
     }
@@ -117,7 +117,8 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 20px;
+      padding: 12px;
+      overflow: hidden;
     }
 
     /* MULTIPLAYER LOBBY OVERLAY */
@@ -127,53 +128,145 @@
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       background: #0b2214;
-      padding: 25px;
+      padding: 20px;
       border-radius: 12px;
       border: 2px solid #34d399;
       z-index: 50;
       flex-direction: column;
-      gap: 15px;
-      width: 320px;
+      gap: 12px;
+      width: 300px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.6);
       text-align: center;
     }
 
     .mp-lobby h3 {
       color: #facc15;
-      font-size: 16px;
+      font-size: 15px;
     }
 
     .mp-lobby input {
-      padding: 12px;
+      padding: 10px;
       border-radius: 8px;
       border: 1px solid #1e3a29;
       background: #1e293b;
       color: white;
-      font-size: 14px;
+      font-size: 13px;
       width: 100%;
+    }
+
+    /* MULTIPLAYER CHAT PANEL (ONLY FOR MULTIPLAYER) */
+    .chat-box {
+      display: none;
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      width: 240px;
+      height: 220px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid #3b82f6;
+      border-radius: 10px;
+      z-index: 40;
+      flex-direction: column;
+      padding: 8px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    }
+
+    .chat-header {
+      font-size: 11px;
+      font-weight: 900;
+      color: #60a5fa;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 4px;
+      margin-bottom: 6px;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .chat-msg-item {
+      background: rgba(255,255,255,0.05);
+      padding: 4px 6px;
+      border-radius: 6px;
+      word-break: break-word;
+    }
+
+    .chat-msg-item strong {
+      color: #facc15;
+    }
+
+    .emoji-bar {
+      display: flex;
+      justify-content: space-around;
+      padding: 4px 0;
+      background: #1e293b;
+      border-radius: 6px;
+      margin: 4px 0;
+    }
+
+    .emoji-bar span {
+      cursor: pointer;
+      font-size: 16px;
+      transition: transform 0.1s;
+    }
+
+    .emoji-bar span:hover {
+      transform: scale(1.3);
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 4px;
+    }
+
+    .chat-input-row input {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: white;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      outline: none;
+    }
+
+    .chat-input-row button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
     }
 
     /* BADGES */
     .badge {
       background: #0b2214;
-      border-radius: 25px;
-      padding: 8px 16px 8px 10px;
+      border-radius: 20px;
+      padding: 6px 14px 6px 8px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       width: fit-content;
       box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     }
 
     .badge-icon {
-      width: 36px;
-      height: 36px;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       background: #1e3a29;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 15px;
     }
 
     .badge-info {
@@ -183,39 +276,42 @@
 
     .badge-name {
       font-weight: 800;
-      font-size: 14px;
+      font-size: 12px;
       color: #ffffff;
     }
 
     .badge-sub {
-      font-size: 11px;
+      font-size: 10px;
       color: #38bdf8;
     }
 
     .badge-opp { align-self: flex-start; }
     .badge-self { align-self: flex-end; }
 
-    /* CARD RACKS */
+    /* CARD RACKS (MOBILE FRIENDLY FLEX-WRAP) */
     .rack {
       display: flex;
+      flex-wrap: wrap; /* CONTINUES DOWN IF YOU HAVE TOO MANY CARDS */
       justify-content: center;
       align-items: center;
       margin: 0 auto;
-      padding: 10px;
-      min-height: 140px;
+      padding: 6px;
+      min-height: 120px;
+      max-height: 170px;
+      overflow-y: auto; /* SCROLLABLE FOR MOBILE PHONES */
+      gap: 6px;
+      width: 100%;
+      max-width: 600px;
     }
 
     .rack .card {
-      margin-left: -25px;
+      margin-left: 0;
+      flex-shrink: 0;
       transition: transform 0.2s;
     }
 
-    .rack .card:first-child {
-      margin-left: 0;
-    }
-
     .rack .card:hover {
-      transform: translateY(-15px);
+      transform: translateY(-8px);
       z-index: 10;
     }
 
@@ -228,12 +324,12 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .table-piles {
       display: flex;
-      gap: 30px;
+      gap: 20px;
       align-items: center;
       text-align: center;
     }
@@ -242,11 +338,12 @@
       background: #facc15;
       color: #000;
       font-weight: 900;
-      font-size: 12px;
-      padding: 4px 12px;
+      font-size: 11px;
+      padding: 4px 10px;
       border-radius: 12px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.4);
       animation: pulse 1.5s infinite;
+      text-align: center;
     }
 
     @keyframes pulse {
@@ -256,19 +353,19 @@
     }
 
     .stack-label {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 800;
       color: #86efac;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       letter-spacing: 0.5px;
     }
 
     /* CARDS */
     .card {
-      width: 80px;
-      height: 120px;
-      border-radius: 10px;
-      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+      width: 70px;
+      height: 105px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
       position: relative;
       user-select: none;
       cursor: pointer;
@@ -285,7 +382,7 @@
     .card.back .watermark {
       color: rgba(255, 255, 255, 0.4);
       font-weight: 900;
-      font-size: 15px;
+      font-size: 13px;
       transform: rotate(-30deg);
       letter-spacing: 1px;
     }
@@ -297,7 +394,7 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 6px;
+      padding: 5px;
     }
 
     .card.whot-20 {
@@ -305,11 +402,11 @@
       border: 2px solid #eab308;
     }
 
-    .num-top { font-size: 15px; font-weight: 900; }
-    .num-bottom { font-size: 13px; font-weight: 900; text-align: right; }
+    .num-top { font-size: 13px; font-weight: 900; }
+    .num-bottom { font-size: 11px; font-weight: 900; text-align: right; }
     .symbol-center {
       text-align: center;
-      font-size: 34px;
+      font-size: 28px;
       font-weight: normal;
       line-height: 1;
     }
@@ -317,15 +414,15 @@
     /* LOG OVERLAY */
     .log-pill {
       position: absolute;
-      bottom: 80px;
-      left: 20px;
+      bottom: 75px;
+      left: 12px;
       background: rgba(0, 0, 0, 0.6);
-      padding: 8px 12px;
+      padding: 6px 10px;
       border-radius: 8px;
-      font-size: 11px;
+      font-size: 10px;
       color: #86efac;
-      max-width: 260px;
-      max-height: 60px;
+      max-width: 200px;
+      max-height: 50px;
       overflow-y: auto;
     }
 
@@ -342,50 +439,52 @@
 
     .modal-box {
       background: #0f172a;
-      padding: 24px;
+      padding: 20px;
       border-radius: 12px;
-      border: 2px solid #dc2626;
+      border: 2px solid #facc15;
       width: 90%;
-      max-width: 360px;
+      max-width: 340px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
-    .shape-grid {
+    .modal-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 10px;
+      gap: 8px;
+      margin-top: 6px;
+      max-height: 220px;
+      overflow-y: auto;
     }
 
-    .shape-btn {
+    .modal-grid-btn {
       background: #1e293b;
-      border: 2px solid #facc15;
+      border: 1px solid #facc15;
       color: #facc15;
-      padding: 12px 8px;
-      border-radius: 8px;
+      padding: 10px 6px;
+      border-radius: 6px;
       font-weight: bold;
-      font-size: 13px;
+      font-size: 12px;
       cursor: pointer;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
     }
 
-    .shape-btn:hover {
+    .modal-grid-btn:hover {
       background: #facc15;
       color: #000;
     }
 
     .cheat-input {
-      padding: 12px;
+      padding: 10px;
       border-radius: 8px;
       border: 1px solid #dc2626;
       background: #1e293b;
       color: #f87171;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: bold;
       text-align: center;
       text-transform: uppercase;
@@ -418,6 +517,8 @@
     <!-- WHOT TYPE/VARIANT SELECTOR -->
     <select id="whot-variant" class="variant-select" onchange="updateVariant()">
       <option value="classic">Classic Whot (Default)</option>
+      <option value="20number">20 Number Mode</option>
+      <option value="20max">20 Max Mode</option>
       <option value="peaceful">Peaceful Mode</option>
       <option value="endless">Endless Market</option>
       <option value="no-general">No General Market</option>
@@ -439,12 +540,30 @@
   <!-- GAME BOARD -->
   <div class="game-board">
 
+    <!-- MULTIPLAYER CHAT PANEL -->
+    <div class="chat-box" id="mp-chat-box">
+      <div class="chat-header">💬 MULTIPLAYER ROOM CHAT</div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="emoji-bar">
+        <span onclick="sendEmoji('😂')">😂</span>
+        <span onclick="sendEmoji('🔥')">🔥</span>
+        <span onclick="sendEmoji('👑')">👑</span>
+        <span onclick="sendEmoji('😡')">😡</span>
+        <span onclick="sendEmoji('🃏')">🃏</span>
+        <span onclick="sendEmoji('👏')">👏</span>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chat-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+        <button onclick="sendChatMessage()">Send</button>
+      </div>
+    </div>
+
     <!-- MULTIPLAYER LOBBY -->
     <div class="mp-lobby" id="mp-lobby">
       <h3>Join Online Room (Max 4)</h3>
       <input type="text" id="mp-name" placeholder="Enter Your Name">
       <input type="text" id="mp-room" value="1" placeholder="Enter Room Number">
-      <button class="nav-btn" style="width: 100%; padding: 12px; font-size: 14px;" onclick="joinRoom()">Join Room</button>
+      <button class="nav-btn" style="width: 100%; padding: 10px; font-size: 13px;" onclick="joinRoom()">Join Room</button>
     </div>
 
     <!-- OPPONENT AREA -->
@@ -456,13 +575,13 @@
           <span class="badge-sub" id="opp-count">5 cards remaining</span>
         </div>
       </div>
-      <div class="rack" id="opp-rack" style="margin-top: -15px;"></div>
+      <div class="rack" id="opp-rack" style="margin-top: -10px;"></div>
     </div>
 
-    <!-- CENTER PILES & REQUESTED SHAPE -->
+    <!-- CENTER PILES & REQUESTED BADGE -->
     <div class="center-table">
-      <div id="requested-shape-badge" style="display: none;" class="requested-indicator">
-        REQUESTED: <span id="requested-shape-text"></span>
+      <div id="requested-badge" style="display: none;" class="requested-indicator">
+        <span id="requested-badge-text"></span>
       </div>
 
       <div class="table-piles">
@@ -484,7 +603,7 @@
 
     <!-- PLAYER AREA -->
     <div>
-      <div class="rack" id="player-rack" style="margin-bottom: -15px;"></div>
+      <div class="rack" id="player-rack" style="margin-bottom: -10px;"></div>
       <div class="badge badge-self">
         <div class="badge-icon" style="background: #eab308; color:#000;">👤</div>
         <div class="badge-info">
@@ -496,23 +615,17 @@
 
   </div>
 
-  <!-- SHAPE SELECTION MODAL (WHOT 20) -->
-  <div class="modal" id="shape-modal">
-    <div class="modal-box" style="border-color: #facc15;">
-      <h3 style="color: #facc15; text-align: center;">⭐ SELECT A REQUESTED SHAPE</h3>
-      <div class="shape-grid">
-        <button class="shape-btn" onclick="chooseShape('Circle')"><span style="font-size:24px;">○</span> Circle</button>
-        <button class="shape-btn" onclick="chooseShape('Triangle')"><span style="font-size:24px;">△</span> Triangle</button>
-        <button class="shape-btn" onclick="chooseShape('Cross')"><span style="font-size:24px;">+</span> Cross</button>
-        <button class="shape-btn" onclick="chooseShape('Square')"><span style="font-size:24px;">□</span> Square</button>
-        <button class="shape-btn" onclick="chooseShape('Star')"><span style="font-size:24px;">☆</span> Star</button>
-      </div>
+  <!-- WHOT 20 CALL SELECTION MODAL -->
+  <div class="modal" id="wild-modal">
+    <div class="modal-box">
+      <h3 style="color: #facc15; text-align: center;" id="modal-title">⭐ SELECT REQUEST</h3>
+      <div class="modal-grid" id="modal-grid-options"></div>
     </div>
   </div>
 
   <!-- CHEATS MODAL -->
   <div class="modal" id="cheat-modal">
-    <div class="modal-box">
+    <div class="modal-box" style="border-color: #dc2626;">
       <h3 style="color: #ef4444; text-align: center;">🔒 SECRET CHEAT TERMINAL</h3>
       <input type="text" class="cheat-input" id="cheat-code-input" placeholder="ENTER SECRET CODE..." onkeydown="if(event.key==='Enter') submitCheat()">
       <div class="cheat-msg" id="cheat-msg">Type secret code and press Enter</div>
@@ -523,14 +636,20 @@
 
   <script>
     const shapes = ["Circle", "Triangle", "Cross", "Square", "Star"];
+    const numbers = [1, 2, 3, 4, 5, 7, 8, 10, 11, 12, 13, 14];
     const symbols = { "Circle": "○", "Triangle": "△", "Cross": "+", "Square": "□", "Star": "☆", "Whot": "W" };
 
     let deck = [];
     let pHand = [];
     let cpuHand = [];
     let topCard = null;
-    let requestedShape = null; // Stores chosen shape when 20 is played
-    let pendingCard = null; // Holds played card while waiting for shape selection
+    
+    // Requested properties
+    let requestedShape = null;
+    let requestedNumber = null;
+    let pendingCard = null;
+    let maxStepShape = null; // Used for 20 Max mode 2-step selection
+
     let gameMode = "sp";
     let currentVariant = "classic";
     let pTurn = true;
@@ -544,6 +663,8 @@
 
     const variantLessons = {
       "classic": "Classic Rules: 1 = Hold On, 2 = Pick 2, 5 = Pick 3, 8 = Skip, 14 = General Market, 20 = Whot.",
+      "20number": "20 Number Mode: Playing a 20 lets you call out a NUMBER instead of a shape!",
+      "20max": "20 Max Mode: Playing a 20 lets you call out BOTH a SHAPE and a NUMBER!",
       "peaceful": "Peaceful Mode: All numbers act as normal cards (No Pick 2/Hold On). Only 20 is Whot!",
       "endless": "Endless Market: If you go to the market, you must keep drawing until you get a playable card!",
       "no-general": "No General Market: Card 14 acts like a regular number. No multi-draw general markets!",
@@ -555,7 +676,7 @@
     function buildDeck() {
       deck = [];
       shapes.forEach(s => {
-        [1, 2, 3, 4, 5, 7, 8, 10, 11, 12, 13, 14].forEach(n => deck.push({ shape: s, num: n }));
+        numbers.forEach(n => deck.push({ shape: s, num: n }));
       });
       for (let i = 0; i < 4; i++) deck.push({ shape: "Whot", num: 20 });
       deck.sort(() => Math.random() - 0.5);
@@ -567,6 +688,7 @@
       cpuHand = deck.splice(0, 5);
       topCard = deck.pop();
       requestedShape = null;
+      requestedNumber = null;
       pTurn = true;
       writeLog(`Started match in [${currentVariant.toUpperCase()}] mode.`);
       updateUI();
@@ -589,6 +711,7 @@
 
       document.getElementById('practice-banner').style.display = (m === 'pr') ? 'block' : 'none';
       document.getElementById('mp-lobby').style.display = (m === 'mp') ? 'flex' : 'none';
+      document.getElementById('mp-chat-box').style.display = (m === 'mp') ? 'flex' : 'none';
 
       if (m === 'pr') {
         document.getElementById('tutorial-text').innerText = variantLessons[currentVariant];
@@ -601,7 +724,8 @@
         initGame();
       } else if (m === 'mp') {
         setTurnPill("Enter Room Details...", "#facc15");
-        pHand = []; cpuHand = []; topCard = null; requestedShape = null;
+        pHand = []; cpuHand = []; topCard = null; 
+        requestedShape = null; requestedNumber = null;
         updateUI();
       }
     }
@@ -619,11 +743,19 @@
       
       document.getElementById('played-card-slot').innerHTML = renderCardHTML(topCard);
 
-      // REQUESTED SHAPE BADGE UPDATE
-      const badge = document.getElementById('requested-shape-badge');
-      if (requestedShape) {
+      // UPDATE REQUESTED BADGE (SUPPORT FOR SHAPE, NUMBER, AND BOTH)
+      const badge = document.getElementById('requested-badge');
+      if (requestedShape || requestedNumber) {
         badge.style.display = 'block';
-        document.getElementById('requested-shape-text').innerText = `${symbols[requestedShape]} ${requestedShape.toUpperCase()}`;
+        let txt = "REQUESTED: ";
+        if (requestedShape && requestedNumber) {
+          txt += `${symbols[requestedShape]} ${requestedShape.toUpperCase()} & NUMBER ${requestedNumber}`;
+        } else if (requestedShape) {
+          txt += `${symbols[requestedShape]} ${requestedShape.toUpperCase()}`;
+        } else if (requestedNumber) {
+          txt += `NUMBER ${requestedNumber}`;
+        }
+        document.getElementById('requested-badge-text').innerText = txt;
       } else {
         badge.style.display = 'none';
       }
@@ -672,8 +804,19 @@
       const c = pHand[idx];
       
       const isWild = (c.num === 20) || (currentVariant === 'wild8' && c.num === 8);
-      const activeShape = requestedShape || topCard.shape;
-      const isMatch = isWild || (c.shape === activeShape) || (c.num === topCard.num);
+      
+      let isMatch = isWild;
+      if (!isMatch) {
+        if (requestedShape && requestedNumber) {
+          isMatch = (c.shape === requestedShape) || (c.num === requestedNumber);
+        } else if (requestedShape) {
+          isMatch = (c.shape === requestedShape) || (c.num === topCard.num);
+        } else if (requestedNumber) {
+          isMatch = (c.num === requestedNumber) || (c.shape === topCard.shape);
+        } else {
+          isMatch = (c.shape === topCard.shape) || (c.num === topCard.num);
+        }
+      }
 
       if (isMatch) {
         pHand.splice(idx, 1);
@@ -681,22 +824,93 @@
 
         if (isWild) {
           pendingCard = c;
-          document.getElementById('shape-modal').style.display = 'flex';
+          openWildModal();
           return;
         }
 
-        requestedShape = null; // Clear requested shape if non-wild is played
+        // Clear active calls when playing regular card
+        requestedShape = null;
+        requestedNumber = null;
         finalizeTurn(c);
       } else {
-        writeLog(`Card doesn't match! Play a ${activeShape} or ${topCard.num}`);
+        writeLog("Card doesn't match active requested shape or number!");
       }
     }
 
-    function chooseShape(shape) {
+    /* OPEN MODAL FOR WILD CALLS (SHAPE, NUMBER, OR MAX) */
+    function openWildModal() {
+      const grid = document.getElementById('modal-grid-options');
+      grid.innerHTML = '';
+      const modal = document.getElementById('wild-modal');
+
+      if (currentVariant === '20number') {
+        document.getElementById('modal-title').innerText = "🔢 SELECT A NUMBER";
+        numbers.forEach(n => {
+          const btn = document.createElement('button');
+          btn.className = "modal-grid-btn";
+          btn.innerText = `Number ${n}`;
+          btn.onclick = () => chooseNumberCall(n);
+          grid.appendChild(btn);
+        });
+      } else if (currentVariant === '20max') {
+        document.getElementById('modal-title').innerText = "⭐ STEP 1: SELECT SHAPE";
+        shapes.forEach(s => {
+          const btn = document.createElement('button');
+          btn.className = "modal-grid-btn";
+          btn.innerHTML = `<span style="font-size:18px;">${symbols[s]}</span> ${s}`;
+          btn.onclick = () => selectMaxShapeStep(s);
+          grid.appendChild(btn);
+        });
+      } else {
+        document.getElementById('modal-title').innerText = "⭐ SELECT A SHAPE";
+        shapes.forEach(s => {
+          const btn = document.createElement('button');
+          btn.className = "modal-grid-btn";
+          btn.innerHTML = `<span style="font-size:18px;">${symbols[s]}</span> ${s}`;
+          btn.onclick = () => chooseShapeCall(s);
+          grid.appendChild(btn);
+        });
+      }
+
+      modal.style.display = 'flex';
+    }
+
+    function selectMaxShapeStep(s) {
+      maxStepShape = s;
+      const grid = document.getElementById('modal-grid-options');
+      grid.innerHTML = '';
+      document.getElementById('modal-title').innerText = `⭐ STEP 2: SELECT NUMBER FOR [${s.toUpperCase()}]`;
+
+      numbers.forEach(n => {
+        const btn = document.createElement('button');
+        btn.className = "modal-grid-btn";
+        btn.innerText = `Number ${n}`;
+        btn.onclick = () => chooseMaxCall(maxStepShape, n);
+        grid.appendChild(btn);
+      });
+    }
+
+    function chooseShapeCall(shape) {
       requestedShape = shape;
-      document.getElementById('shape-modal').style.display = 'none';
-      writeLog(`You played ${pendingCard.num} WHOT and called [${shape.toUpperCase()}]`);
-      pendingCard = null;
+      requestedNumber = null;
+      document.getElementById('wild-modal').style.display = 'none';
+      writeLog(`You played WHOT and called [${shape.toUpperCase()}]`);
+      finalizeTurn(topCard);
+    }
+
+    function chooseNumberCall(num) {
+      requestedNumber = num;
+      requestedShape = null;
+      document.getElementById('wild-modal').style.display = 'none';
+      writeLog(`You played WHOT and called NUMBER [${num}]`);
+      finalizeTurn(topCard);
+    }
+
+    function chooseMaxCall(shape, num) {
+      requestedShape = shape;
+      requestedNumber = num;
+      document.getElementById('wild-modal').style.display = 'none';
+      writeLog(`You played WHOT MAX and called [${shape.toUpperCase()} & NUMBER ${num}]`);
       finalizeTurn(topCard);
     }
 
@@ -737,11 +951,16 @@
       if (currentVariant === 'endless') {
         writeLog("Endless Market: Drawing until playable card found...");
         let drawn = null;
-        const activeShape = requestedShape || topCard.shape;
         while(deck.length > 0) {
           drawn = deck.pop();
           pHand.push(drawn);
-          if (drawn.num === 20 || drawn.shape === activeShape || drawn.num === topCard.num) {
+          let match = (drawn.num === 20);
+          if (requestedShape && requestedNumber) match = match || (drawn.shape === requestedShape) || (drawn.num === requestedNumber);
+          else if (requestedShape) match = match || (drawn.shape === requestedShape);
+          else if (requestedNumber) match = match || (drawn.num === requestedNumber);
+          else match = match || (drawn.shape === topCard.shape) || (drawn.num === topCard.num);
+
+          if (match) {
             writeLog(`Found playable card: ${drawn.num} ${drawn.shape}!`);
             break;
           }
@@ -758,8 +977,14 @@
 
     function cpuTurn() {
       if (cpuHand.length === 0 || gameMode === 'mp') return;
-      const activeShape = requestedShape || topCard.shape;
-      let matchIdx = cpuHand.findIndex(c => c.num === 20 || (currentVariant === 'wild8' && c.num === 8) || c.shape === activeShape || c.num === topCard.num);
+
+      let matchIdx = cpuHand.findIndex(c => {
+        if (c.num === 20 || (currentVariant === 'wild8' && c.num === 8)) return true;
+        if (requestedShape && requestedNumber) return (c.shape === requestedShape || c.num === requestedNumber);
+        if (requestedShape) return c.shape === requestedShape || c.num === topCard.num;
+        if (requestedNumber) return c.num === requestedNumber || c.shape === topCard.shape;
+        return c.shape === topCard.shape || c.num === topCard.num;
+      });
 
       if (matchIdx !== -1) {
         let c = cpuHand.splice(matchIdx, 1)[0];
@@ -767,20 +992,22 @@
         const isWild = (c.num === 20) || (currentVariant === 'wild8' && c.num === 8);
 
         if (isWild) {
-          // CPU smartly chooses the shape it has the most of
-          let shapeCounts = {};
-          shapes.forEach(s => shapeCounts[s] = 0);
-          cpuHand.forEach(card => { if(card.shape && shapeCounts[card.shape] !== undefined) shapeCounts[card.shape]++; });
-          
-          let bestShape = "Circle";
-          let maxCount = -1;
-          for(let s in shapeCounts) {
-            if(shapeCounts[s] > maxCount) { maxCount = shapeCounts[s]; bestShape = s; }
+          if (currentVariant === '20number') {
+            requestedNumber = c.num === 20 ? 5 : c.num;
+            requestedShape = null;
+            writeLog(`Opponent played WHOT and called NUMBER [${requestedNumber}]`);
+          } else if (currentVariant === '20max') {
+            requestedShape = "Circle";
+            requestedNumber = 7;
+            writeLog(`Opponent played WHOT MAX and called [CIRCLE & NUMBER 7]`);
+          } else {
+            requestedShape = "Triangle";
+            requestedNumber = null;
+            writeLog(`Opponent played WHOT and called [TRIANGLE]`);
           }
-          requestedShape = bestShape;
-          writeLog(`Opponent played ${c.num} WHOT and called [${requestedShape.toUpperCase()}]`);
         } else {
           requestedShape = null;
+          requestedNumber = null;
           writeLog(`Opponent played ${c.num} ${c.shape}`);
         }
 
@@ -800,9 +1027,7 @@
     }
 
     function givePracticeHint() {
-      const activeShape = requestedShape || topCard.shape;
-      let matches = pHand.filter(c => c.num === 20 || (currentVariant === 'wild8' && c.num === 8) || c.shape === activeShape || c.num === topCard.num);
-      document.getElementById('tutorial-text').innerText = `${variantLessons[currentVariant]} | HINT: Target is [${activeShape} / ${topCard.num}]. You have ${matches.length} playable card(s).`;
+      document.getElementById('tutorial-text').innerText = `${variantLessons[currentVariant]}`;
     }
 
     function checkEnd() {
@@ -816,7 +1041,40 @@
       b.innerText = t + "\n" + b.innerText;
     }
 
-    /* MULTIPLAYER LOBBY (Max 4 & Same Whot Type) */
+    /* ==== MULTIPLAYER CHAT & MESSAGING SYSTEM ==== */
+    function sendChatMessage() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendChatMessage(myPlayerName, text);
+      broadcastData({ type: 'chat', sender: myPlayerName, text: text });
+      input.value = '';
+    }
+
+    function sendEmoji(emoji) {
+      appendChatMessage(myPlayerName, emoji);
+      broadcastData({ type: 'chat', sender: myPlayerName, text: emoji });
+    }
+
+    function appendChatMessage(sender, text) {
+      const box = document.getElementById('chat-messages');
+      const item = document.createElement('div');
+      item.className = 'chat-msg-item';
+      item.innerHTML = `<strong>${sender}:</strong> ${text}`;
+      box.appendChild(item);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function broadcastData(data) {
+      if (isHost) {
+        connections.forEach(c => c.send(data));
+      } else if (connections.length > 0) {
+        connections[0].send(data);
+      }
+    }
+
+    /* ==== MULTIPLAYER LOBBY CONNECTION ==== */
     function joinRoom() {
       myPlayerName = document.getElementById('mp-name').value || "Player";
       const roomNum = document.getElementById('mp-room').value || "1";
@@ -834,11 +1092,14 @@
 
         conn.on('open', () => {
           isHost = false;
+          connections = [conn];
           conn.send({ type: 'handshake', name: myPlayerName, variant: currentVariant });
         });
 
         conn.on('data', (data) => {
-          if (data.type === 'rejected') {
+          if (data.type === 'chat') {
+            appendChatMessage(data.sender, data.text);
+          } else if (data.type === 'rejected') {
             alert(data.reason);
             changeMode('sp');
           } else if (data.type === 'accepted') {
@@ -861,7 +1122,11 @@
 
             peer.on('connection', (c) => {
               c.on('data', (data) => {
-                if (data.type === 'handshake') {
+                if (data.type === 'chat') {
+                  appendChatMessage(data.sender, data.text);
+                  // Relaying chat to all other connected peers
+                  connections.forEach(conn => { if (conn !== c) conn.send(data); });
+                } else if (data.type === 'handshake') {
                   if (connections.length >= 3) {
                     c.send({ type: 'rejected', reason: 'Room is full! Maximum 4 players allowed.' });
                     return;
