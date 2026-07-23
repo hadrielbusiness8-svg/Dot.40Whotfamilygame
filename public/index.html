@@ -226,9 +226,33 @@
       left: 50%;
       transform: translate(-50%, -50%);
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .table-piles {
+      display: flex;
       gap: 30px;
       align-items: center;
       text-align: center;
+    }
+
+    .requested-indicator {
+      background: #facc15;
+      color: #000;
+      font-weight: 900;
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
     }
 
     .stack-label {
@@ -305,7 +329,7 @@
       overflow-y: auto;
     }
 
-    /* CHEATS MODAL */
+    /* MODAL WINDOWS */
     .modal {
       display: none;
       position: fixed;
@@ -328,10 +352,31 @@
       gap: 12px;
     }
 
-    .modal-box h3 {
-      color: #ef4444;
-      text-align: center;
-      font-size: 16px;
+    .shape-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .shape-btn {
+      background: #1e293b;
+      border: 2px solid #facc15;
+      color: #facc15;
+      padding: 12px 8px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .shape-btn:hover {
+      background: #facc15;
+      color: #000;
     }
 
     .cheat-input {
@@ -414,18 +459,24 @@
       <div class="rack" id="opp-rack" style="margin-top: -15px;"></div>
     </div>
 
-    <!-- CENTER PILES -->
+    <!-- CENTER PILES & REQUESTED SHAPE -->
     <div class="center-table">
-      <div>
-        <div class="stack-label">MARKET</div>
-        <div class="card back" onclick="playerDraw()">
-          <div class="watermark">WHOT!</div>
-        </div>
+      <div id="requested-shape-badge" style="display: none;" class="requested-indicator">
+        REQUESTED: <span id="requested-shape-text"></span>
       </div>
 
-      <div>
-        <div class="stack-label">PLAYED STACK</div>
-        <div id="played-card-slot"></div>
+      <div class="table-piles">
+        <div>
+          <div class="stack-label">MARKET</div>
+          <div class="card back" onclick="playerDraw()">
+            <div class="watermark">WHOT!</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="stack-label">PLAYED STACK</div>
+          <div id="played-card-slot"></div>
+        </div>
       </div>
     </div>
 
@@ -445,10 +496,24 @@
 
   </div>
 
+  <!-- SHAPE SELECTION MODAL (WHOT 20) -->
+  <div class="modal" id="shape-modal">
+    <div class="modal-box" style="border-color: #facc15;">
+      <h3 style="color: #facc15; text-align: center;">⭐ SELECT A REQUESTED SHAPE</h3>
+      <div class="shape-grid">
+        <button class="shape-btn" onclick="chooseShape('Circle')"><span style="font-size:24px;">○</span> Circle</button>
+        <button class="shape-btn" onclick="chooseShape('Triangle')"><span style="font-size:24px;">△</span> Triangle</button>
+        <button class="shape-btn" onclick="chooseShape('Cross')"><span style="font-size:24px;">+</span> Cross</button>
+        <button class="shape-btn" onclick="chooseShape('Square')"><span style="font-size:24px;">□</span> Square</button>
+        <button class="shape-btn" onclick="chooseShape('Star')"><span style="font-size:24px;">☆</span> Star</button>
+      </div>
+    </div>
+  </div>
+
   <!-- CHEATS MODAL -->
   <div class="modal" id="cheat-modal">
     <div class="modal-box">
-      <h3>🔒 SECRET CHEAT TERMINAL</h3>
+      <h3 style="color: #ef4444; text-align: center;">🔒 SECRET CHEAT TERMINAL</h3>
       <input type="text" class="cheat-input" id="cheat-code-input" placeholder="ENTER SECRET CODE..." onkeydown="if(event.key==='Enter') submitCheat()">
       <div class="cheat-msg" id="cheat-msg">Type secret code and press Enter</div>
       <button class="nav-btn btn-cheat" style="padding: 10px;" onclick="submitCheat()">Activate Cheat</button>
@@ -464,15 +529,16 @@
     let pHand = [];
     let cpuHand = [];
     let topCard = null;
+    let requestedShape = null; // Stores chosen shape when 20 is played
+    let pendingCard = null; // Holds played card while waiting for shape selection
     let gameMode = "sp";
     let currentVariant = "classic";
     let pTurn = true;
     let peekCPU = false;
-    let stackedPenalty = 0;
 
     // Multiplayer Variables
     let peer = null;
-    let connections = []; // Track up to 3 guests (Host + 3 guests = 4 players max)
+    let connections = [];
     let isHost = false;
     let myPlayerName = "Player 1";
 
@@ -500,8 +566,8 @@
       pHand = deck.splice(0, 5);
       cpuHand = deck.splice(0, 5);
       topCard = deck.pop();
+      requestedShape = null;
       pTurn = true;
-      stackedPenalty = 0;
       writeLog(`Started match in [${currentVariant.toUpperCase()}] mode.`);
       updateUI();
     }
@@ -535,127 +601,10 @@
         initGame();
       } else if (m === 'mp') {
         setTurnPill("Enter Room Details...", "#facc15");
-        pHand = []; cpuHand = []; topCard = null;
+        pHand = []; cpuHand = []; topCard = null; requestedShape = null;
         updateUI();
       }
     }
-
-    /* ==== MULTIPLAYER LOGIC (MAX 4 PLAYERS + VARIANT CHECK) ==== */
-    function joinRoom() {
-      myPlayerName = document.getElementById('mp-name').value || "Player";
-      const roomNum = document.getElementById('mp-room').value || "1";
-      const hostId = `dot40-whot-room-${roomNum}`;
-
-      document.getElementById('mp-lobby').style.display = 'none';
-      document.getElementById('player-label').innerText = myPlayerName;
-      document.getElementById('opp-icon').innerText = "🌐";
-      setTurnPill("Connecting to Room...", "#eab308");
-
-      peer = new Peer();
-
-      peer.on('open', () => {
-        let conn = peer.connect(hostId, { reliable: true });
-
-        conn.on('open', () => {
-          isHost = false;
-          // Send join handshake with our current variant
-          conn.send({ type: 'handshake', name: myPlayerName, variant: currentVariant });
-        });
-
-        conn.on('data', (data) => {
-          if (data.type === 'rejected') {
-            alert(data.reason);
-            changeMode('sp');
-          } else if (data.type === 'accepted') {
-            writeLog(`Connected to Room ${roomNum}. Variant: ${data.variant.toUpperCase()}`);
-            setTurnPill("Waiting for match start...", "#3b82f6");
-          } else {
-            handleMPData(data);
-          }
-        });
-
-        peer.on('error', (err) => {
-          if (err.type === 'peer-unavailable') {
-            // Become Host
-            peer.destroy();
-            peer = new Peer(hostId);
-
-            peer.on('open', () => {
-              isHost = true;
-              connections = [];
-              setTurnPill("Waiting for opponents (Max 4)...", "#3b82f6");
-              writeLog(`Room ${roomNum} created. Playing [${currentVariant.toUpperCase()}].`);
-            });
-
-            peer.on('connection', (c) => {
-              c.on('data', (data) => {
-                if (data.type === 'handshake') {
-                  // CHECK 1: Max 4 Players Limit (Host + 3 Guests)
-                  if (connections.length >= 3) {
-                    c.send({ type: 'rejected', reason: 'Room is full! Maximum 4 players allowed.' });
-                    return;
-                  }
-                  // CHECK 2: Same Whot Variant Required
-                  if (data.variant !== currentVariant) {
-                    c.send({ 
-                      type: 'rejected', 
-                      reason: `Variant Mismatch! Room Host is playing [${currentVariant.toUpperCase()}]. Change your dropdown variant to join!` 
-                    });
-                    return;
-                  }
-
-                  connections.push(c);
-                  c.send({ type: 'accepted', variant: currentVariant });
-                  document.getElementById('opp-label').innerText = `${connections.length} Opponents Connected`;
-                  writeLog(`${data.name} joined room.`);
-
-                  if (connections.length === 1) startMultiplayerGame();
-                } else {
-                  handleMPData(data);
-                }
-              });
-            });
-          }
-        });
-      });
-    }
-
-    function handleMPData(data) {
-      if (data.type === 'state') {
-        deck = data.deck;
-        topCard = data.topCard;
-        pHand = data.pHand;
-        cpuHand = data.oppHand;
-        pTurn = data.yourTurn;
-        updateUI();
-      } else if (data.type === 'play') {
-        topCard = data.card;
-        cpuHand.pop();
-        writeLog(`Opponent played ${data.card.num} ${data.card.shape}`);
-        pTurn = data.yourTurn;
-        updateUI();
-      }
-    }
-
-    function startMultiplayerGame() {
-      buildDeck();
-      let p1Hand = deck.splice(0, 5);
-      topCard = deck.pop();
-
-      connections.forEach((c) => {
-        let guestHand = deck.splice(0, 5);
-        c.send({
-          type: 'state', deck: deck, topCard: topCard,
-          pHand: guestHand, oppHand: p1Hand, yourTurn: false
-        });
-      });
-
-      pHand = p1Hand;
-      cpuHand = [{},{},{},{}];
-      pTurn = true;
-      updateUI();
-    }
-    /* ========================================================== */
 
     function setTurnPill(text, color = "#34d399") {
       const pill = document.getElementById('turn-indicator');
@@ -669,6 +618,15 @@
       }
       
       document.getElementById('played-card-slot').innerHTML = renderCardHTML(topCard);
+
+      // REQUESTED SHAPE BADGE UPDATE
+      const badge = document.getElementById('requested-shape-badge');
+      if (requestedShape) {
+        badge.style.display = 'block';
+        document.getElementById('requested-shape-text').innerText = `${symbols[requestedShape]} ${requestedShape.toUpperCase()}`;
+      } else {
+        badge.style.display = 'none';
+      }
 
       const pRack = document.getElementById('player-rack');
       pRack.innerHTML = '';
@@ -714,45 +672,63 @@
       const c = pHand[idx];
       
       const isWild = (c.num === 20) || (currentVariant === 'wild8' && c.num === 8);
-      const isMatch = isWild || (c.shape === topCard.shape) || (c.num === topCard.num);
+      const activeShape = requestedShape || topCard.shape;
+      const isMatch = isWild || (c.shape === activeShape) || (c.num === topCard.num);
 
       if (isMatch) {
         pHand.splice(idx, 1);
         topCard = c;
-        writeLog(`You played ${c.num} ${c.shape}`);
-        
-        if (checkEnd()) return;
 
-        // PROCESS VARIANT RULES
-        let holdOn = false;
-        if (currentVariant !== 'peaceful') {
-          if (c.num === 1) holdOn = true;
-          if (c.num === 2) {
-            let p = (currentVariant === 'double') ? 4 : 2;
-            writeLog(`Pick ${p}! Opponent penalized.`);
-            for(let i=0; i<p; i++) if(deck.length) cpuHand.push(deck.pop());
-          }
-          if (c.num === 5) {
-            let p = (currentVariant === 'double') ? 6 : 3;
-            writeLog(`Pick ${p}! Opponent penalized.`);
-            for(let i=0; i<p; i++) if(deck.length) cpuHand.push(deck.pop());
-          }
-          if (c.num === 14 && currentVariant !== 'no-general') {
-            writeLog("General Market! Opponent draws 1.");
-            if(deck.length) cpuHand.push(deck.pop());
-          }
+        if (isWild) {
+          pendingCard = c;
+          document.getElementById('shape-modal').style.display = 'flex';
+          return;
         }
 
-        if (holdOn) {
-          writeLog("Hold On! Play again.");
-        } else {
-          pTurn = false;
-          if (gameMode !== 'mp') setTimeout(cpuTurn, 1000);
-        }
-        updateUI();
+        requestedShape = null; // Clear requested shape if non-wild is played
+        finalizeTurn(c);
       } else {
-        writeLog("Card doesn't match top stack!");
+        writeLog(`Card doesn't match! Play a ${activeShape} or ${topCard.num}`);
       }
+    }
+
+    function chooseShape(shape) {
+      requestedShape = shape;
+      document.getElementById('shape-modal').style.display = 'none';
+      writeLog(`You played ${pendingCard.num} WHOT and called [${shape.toUpperCase()}]`);
+      pendingCard = null;
+      finalizeTurn(topCard);
+    }
+
+    function finalizeTurn(c) {
+      if (checkEnd()) return;
+
+      let holdOn = false;
+      if (currentVariant !== 'peaceful') {
+        if (c.num === 1) holdOn = true;
+        if (c.num === 2) {
+          let p = (currentVariant === 'double') ? 4 : 2;
+          writeLog(`Pick ${p}! Opponent penalized.`);
+          for(let i=0; i<p; i++) if(deck.length) cpuHand.push(deck.pop());
+        }
+        if (c.num === 5) {
+          let p = (currentVariant === 'double') ? 6 : 3;
+          writeLog(`Pick ${p}! Opponent penalized.`);
+          for(let i=0; i<p; i++) if(deck.length) cpuHand.push(deck.pop());
+        }
+        if (c.num === 14 && currentVariant !== 'no-general') {
+          writeLog("General Market! Opponent draws 1.");
+          if(deck.length) cpuHand.push(deck.pop());
+        }
+      }
+
+      if (holdOn) {
+        writeLog("Hold On! Play again.");
+      } else {
+        pTurn = false;
+        if (gameMode !== 'mp') setTimeout(cpuTurn, 1000);
+      }
+      updateUI();
     }
 
     function playerDraw() {
@@ -761,10 +737,11 @@
       if (currentVariant === 'endless') {
         writeLog("Endless Market: Drawing until playable card found...");
         let drawn = null;
+        const activeShape = requestedShape || topCard.shape;
         while(deck.length > 0) {
           drawn = deck.pop();
           pHand.push(drawn);
-          if (drawn.num === 20 || drawn.shape === topCard.shape || drawn.num === topCard.num) {
+          if (drawn.num === 20 || drawn.shape === activeShape || drawn.num === topCard.num) {
             writeLog(`Found playable card: ${drawn.num} ${drawn.shape}!`);
             break;
           }
@@ -781,12 +758,32 @@
 
     function cpuTurn() {
       if (cpuHand.length === 0 || gameMode === 'mp') return;
-      let matchIdx = cpuHand.findIndex(c => c.num === 20 || c.shape === topCard.shape || c.num === topCard.num);
+      const activeShape = requestedShape || topCard.shape;
+      let matchIdx = cpuHand.findIndex(c => c.num === 20 || (currentVariant === 'wild8' && c.num === 8) || c.shape === activeShape || c.num === topCard.num);
 
       if (matchIdx !== -1) {
         let c = cpuHand.splice(matchIdx, 1)[0];
         topCard = c;
-        writeLog(`Opponent played ${c.num} ${c.shape}`);
+        const isWild = (c.num === 20) || (currentVariant === 'wild8' && c.num === 8);
+
+        if (isWild) {
+          // CPU smartly chooses the shape it has the most of
+          let shapeCounts = {};
+          shapes.forEach(s => shapeCounts[s] = 0);
+          cpuHand.forEach(card => { if(card.shape && shapeCounts[card.shape] !== undefined) shapeCounts[card.shape]++; });
+          
+          let bestShape = "Circle";
+          let maxCount = -1;
+          for(let s in shapeCounts) {
+            if(shapeCounts[s] > maxCount) { maxCount = shapeCounts[s]; bestShape = s; }
+          }
+          requestedShape = bestShape;
+          writeLog(`Opponent played ${c.num} WHOT and called [${requestedShape.toUpperCase()}]`);
+        } else {
+          requestedShape = null;
+          writeLog(`Opponent played ${c.num} ${c.shape}`);
+        }
+
         if (checkEnd()) return;
         if (c.num === 1 && currentVariant !== 'peaceful') {
           writeLog("Opponent played Hold On!");
@@ -803,8 +800,9 @@
     }
 
     function givePracticeHint() {
-      let matches = pHand.filter(c => c.num === 20 || (currentVariant === 'wild8' && c.num === 8) || c.shape === topCard.shape || c.num === topCard.num);
-      document.getElementById('tutorial-text').innerText = `${variantLessons[currentVariant]} | HINT: You have ${matches.length} playable card(s) right now.`;
+      const activeShape = requestedShape || topCard.shape;
+      let matches = pHand.filter(c => c.num === 20 || (currentVariant === 'wild8' && c.num === 8) || c.shape === activeShape || c.num === topCard.num);
+      document.getElementById('tutorial-text').innerText = `${variantLessons[currentVariant]} | HINT: Target is [${activeShape} / ${topCard.num}]. You have ${matches.length} playable card(s).`;
     }
 
     function checkEnd() {
@@ -816,6 +814,76 @@
     function writeLog(t) {
       const b = document.getElementById('log-box');
       b.innerText = t + "\n" + b.innerText;
+    }
+
+    /* MULTIPLAYER LOBBY (Max 4 & Same Whot Type) */
+    function joinRoom() {
+      myPlayerName = document.getElementById('mp-name').value || "Player";
+      const roomNum = document.getElementById('mp-room').value || "1";
+      const hostId = `dot40-whot-room-${roomNum}`;
+
+      document.getElementById('mp-lobby').style.display = 'none';
+      document.getElementById('player-label').innerText = myPlayerName;
+      document.getElementById('opp-icon').innerText = "🌐";
+      setTurnPill("Connecting to Room...", "#eab308");
+
+      peer = new Peer();
+
+      peer.on('open', () => {
+        let conn = peer.connect(hostId, { reliable: true });
+
+        conn.on('open', () => {
+          isHost = false;
+          conn.send({ type: 'handshake', name: myPlayerName, variant: currentVariant });
+        });
+
+        conn.on('data', (data) => {
+          if (data.type === 'rejected') {
+            alert(data.reason);
+            changeMode('sp');
+          } else if (data.type === 'accepted') {
+            writeLog(`Connected to Room ${roomNum}. Variant: ${data.variant.toUpperCase()}`);
+            setTurnPill("Waiting for match start...", "#3b82f6");
+          }
+        });
+
+        peer.on('error', (err) => {
+          if (err.type === 'peer-unavailable') {
+            peer.destroy();
+            peer = new Peer(hostId);
+
+            peer.on('open', () => {
+              isHost = true;
+              connections = [];
+              setTurnPill("Waiting for opponents (Max 4)...", "#3b82f6");
+              writeLog(`Room ${roomNum} created. Playing [${currentVariant.toUpperCase()}].`);
+            });
+
+            peer.on('connection', (c) => {
+              c.on('data', (data) => {
+                if (data.type === 'handshake') {
+                  if (connections.length >= 3) {
+                    c.send({ type: 'rejected', reason: 'Room is full! Maximum 4 players allowed.' });
+                    return;
+                  }
+                  if (data.variant !== currentVariant) {
+                    c.send({ 
+                      type: 'rejected', 
+                      reason: `Variant Mismatch! Room Host is playing [${currentVariant.toUpperCase()}]. Change your dropdown variant to join!` 
+                    });
+                    return;
+                  }
+
+                  connections.push(c);
+                  c.send({ type: 'accepted', variant: currentVariant });
+                  document.getElementById('opp-label').innerText = `${connections.length} Opponents Connected`;
+                  writeLog(`${data.name} joined room.`);
+                }
+              });
+            });
+          }
+        });
+      });
     }
 
     function toggleCheats(show) { 
