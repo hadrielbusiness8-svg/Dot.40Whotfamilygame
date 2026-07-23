@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dot.40 Whot Game - Hadriel & Ajayi</title>
+  <title>Dot.40 WHOT - Hadriel & Ajayi</title>
+  <!-- PeerJS for WebRTC Online Multiplayer -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -25,7 +27,7 @@
 
     .header-bar {
       text-align: center;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .header-bar h1 {
@@ -41,8 +43,10 @@
 
     .mode-bar {
       display: flex;
-      gap: 8px;
-      margin-bottom: 12px;
+      gap: 6px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     .mode-btn {
@@ -52,7 +56,7 @@
       padding: 6px 12px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: bold;
     }
 
@@ -60,6 +64,36 @@
       background: #00e676;
       color: #000;
       border-color: #00e676;
+    }
+
+    /* MULTIPLAYER LOBBY PANEL */
+    .multiplayer-panel {
+      width: 100%;
+      max-width: 500px;
+      background: #1e1e1e;
+      border: 1px solid #00e676;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .mp-inputs {
+      display: flex;
+      gap: 6px;
+    }
+
+    .mp-inputs input {
+      flex: 1;
+      padding: 6px;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #121212;
+      color: #fff;
+      font-size: 12px;
     }
 
     .game-board {
@@ -212,11 +246,22 @@
 
   <div class="mode-bar">
     <button class="mode-btn active" id="btn-single" onclick="switchMode('single')">Single Player</button>
+    <button class="mode-btn" id="btn-multi" onclick="switchMode('multiplayer')">Online Multiplayer</button>
     <button class="mode-btn" id="btn-practice" onclick="switchMode('practice')">Practice Mode</button>
   </div>
 
+  <!-- MULTIPLAYER CONTROLS PANEL -->
+  <div class="multiplayer-panel" id="mp-panel" style="display: none;">
+    <div>Your Peer ID: <b id="my-peer-id" style="color: #00e676;">Connecting...</b></div>
+    <div class="mp-inputs">
+      <input type="text" id="join-peer-id" placeholder="Enter Friend's Peer ID">
+      <button class="action-btn" style="padding: 6px;" onclick="connectToPeer()">Join Room</button>
+    </div>
+    <div id="mp-status" style="color: #aaa; font-size: 11px;">Status: Offline</div>
+  </div>
+
   <div class="game-board">
-    <div class="hand-label">CPU HAND (<span id="cpu-count">5</span>)</div>
+    <div class="hand-label" id="opp-label">OPPONENT HAND (<span id="cpu-count">5</span>)</div>
     <div class="card-row" id="cpu-row"></div>
 
     <div class="center-table">
@@ -250,15 +295,15 @@
     <div class="modal-box">
       <h3 style="color:#ff1744; text-align:center; font-size:14px;">10 Effective Cheats</h3>
       <div class="cheat-grid">
-        <button class="cheat-btn" onclick="cPeek()">1. Peek CPU Hand</button>
+        <button class="cheat-btn" onclick="cPeek()">1. Peek Opponent Hand</button>
         <button class="cheat-btn" onclick="cAddWhot()">2. Give Whot (20)</button>
-        <button class="cheat-btn" onclick="cCPUDraw5()">3. Force CPU Draw 5</button>
+        <button class="cheat-btn" onclick="cCPUDraw5()">3. Force Opponent Draw 5</button>
         <button class="cheat-btn" onclick="cInstantWin()">4. Instant Win</button>
         <button class="cheat-btn" onclick="cSwap()">5. Swap Hands</button>
-        <button class="cheat-btn" onclick="cSkipCPU()">6. Skip CPU Turn</button>
+        <button class="cheat-btn" onclick="cSkipCPU()">6. Skip Opponent Turn</button>
         <button class="cheat-btn" onclick="cHoldOnSpam()">7. Add Hold-On Cards</button>
         <button class="cheat-btn" onclick="cPeekDeck()">8. Peek Market Top</button>
-        <button class="cheat-btn" onclick="cClearCPU()">9. Wipe CPU Market</button>
+        <button class="cheat-btn" onclick="cClearCPU()">9. Wipe Opponent Hand</button>
         <button class="cheat-btn" onclick="cInfiniteTurns()">10. Infinite Turns</button>
       </div>
       <button class="action-btn" style="margin-top:5px; padding:6px;" onclick="toggleCheatMenu(false)">Close</button>
@@ -276,6 +321,11 @@
     let mode = "single"; 
     let pTurn = true;
     let cpuVisible = false;
+
+    // Online Multiplayer PeerJS state
+    let peer = null;
+    let conn = null;
+    let isHost = false;
 
     function createDeck() {
       deck = [];
@@ -299,9 +349,84 @@
     function switchMode(newMode) {
       mode = newMode;
       document.getElementById('btn-single').classList.toggle('active', mode === 'single');
+      document.getElementById('btn-multi').classList.toggle('active', mode === 'multiplayer');
       document.getElementById('btn-practice').classList.toggle('active', mode === 'practice');
-      writeLog(mode === 'practice' ? "Practice Mode ON: Watch logs for helpful tips." : "Single Player Mode active.");
-      initGame();
+
+      document.getElementById('mp-panel').style.display = (mode === 'multiplayer') ? 'flex' : 'none';
+      document.getElementById('opp-label').innerText = (mode === 'multiplayer') ? "PLAYER 2 HAND" : "CPU HAND";
+
+      if (mode === 'multiplayer') {
+        initPeer();
+        writeLog("Multiplayer Mode: Share your Peer ID or Join a friend!");
+      } else if (mode === 'practice') {
+        writeLog("Practice Mode ON: Watch logs for helpful tips.");
+        initGame();
+      } else {
+        writeLog("Single Player Mode active.");
+        initGame();
+      }
+    }
+
+    /* ONLINE MULTIPLAYER PEERJS SETUP */
+    function initPeer() {
+      if (peer) return;
+      peer = new Peer();
+
+      peer.on('open', id => {
+        document.getElementById('my-peer-id').innerText = id;
+        document.getElementById('mp-status').innerText = "Status: Ready to host or join";
+      });
+
+      peer.on('connection', connection => {
+        conn = connection;
+        isHost = true;
+        setupConn();
+        document.getElementById('mp-status').innerText = "Connected to Player 2 (Host)";
+        initGame();
+        sendGameState();
+      });
+    }
+
+    function connectToPeer() {
+      const peerId = document.getElementById('join-peer-id').value.trim();
+      if (!peerId) return alert("Please enter a valid Peer ID!");
+      
+      initPeer();
+      conn = peer.connect(peerId);
+      isHost = false;
+      setupConn();
+      document.getElementById('mp-status').innerText = "Connecting to Host...";
+    }
+
+    function setupConn() {
+      conn.on('open', () => {
+        document.getElementById('mp-status').innerText = "Connected! Match started.";
+        writeLog("Connected to multiplayer room!");
+      });
+
+      conn.on('data', data => {
+        // Sync multiplayer game state
+        if (data.type === 'SYNC') {
+          deck = data.deck;
+          topCard = data.topCard;
+          pHand = isHost ? data.p1Hand : data.p2Hand;
+          cpuHand = isHost ? data.p2Hand : data.p1Hand;
+          pTurn = isHost ? data.turn === 'p1' : data.turn === 'p2';
+          updateUI();
+        }
+      });
+    }
+
+    function sendGameState() {
+      if (!conn || !isHost) return;
+      conn.send({
+        type: 'SYNC',
+        deck: deck,
+        topCard: topCard,
+        p1Hand: pHand,
+        p2Hand: cpuHand,
+        turn: pTurn ? 'p1' : 'p2'
+      });
     }
 
     function updateUI() {
@@ -318,7 +443,7 @@
         pRow.appendChild(div);
       });
 
-      // Render CPU
+      // Render CPU / Opponent
       const cpuRow = document.getElementById('cpu-row');
       cpuRow.innerHTML = '';
       document.getElementById('cpu-count').innerText = cpuHand.length;
@@ -342,7 +467,7 @@
     }
 
     function playCard(idx) {
-      if (!pTurn) return;
+      if (!pTurn) return writeLog("Not your turn!");
       const c = pHand[idx];
       if (c.num === 20 || c.shape === topCard.shape || c.num === topCard.num) {
         pHand.splice(idx, 1);
@@ -355,7 +480,11 @@
           writeLog("Hold On! Play again.");
         } else {
           pTurn = false;
-          setTimeout(cpuAction, 1000);
+          if (mode === 'single' || mode === 'practice') {
+            setTimeout(cpuAction, 1000);
+          } else if (mode === 'multiplayer') {
+            sendGameState();
+          }
         }
         updateUI();
       } else {
@@ -369,7 +498,12 @@
       writeLog("You drew a card.");
       pTurn = false;
       updateUI();
-      setTimeout(cpuAction, 1000);
+
+      if (mode === 'single' || mode === 'practice') {
+        setTimeout(cpuAction, 1000);
+      } else if (mode === 'multiplayer') {
+        sendGameState();
+      }
     }
 
     function cpuAction() {
@@ -411,7 +545,7 @@
         return true;
       }
       if (cpuHand.length === 0) {
-        alert("CPU Won!");
+        alert("Opponent Won!");
         initGame();
         return true;
       }
@@ -433,7 +567,7 @@
     function cCPUDraw5() { if(deck.length>=5) cpuHand.push(...deck.splice(0,5)); updateUI(); toggleCheatMenu(false); }
     function cInstantWin() { pHand = []; checkWin(); toggleCheatMenu(false); }
     function cSwap() { let t = [...pHand]; pHand = [...cpuHand]; cpuHand = t; updateUI(); toggleCheatMenu(false); }
-    function cSkipCPU() { pTurn = true; writeLog("Skipped CPU turn!"); updateUI(); toggleCheatMenu(false); }
+    function cSkipCPU() { pTurn = true; writeLog("Skipped turn!"); updateUI(); toggleCheatMenu(false); }
     function cHoldOnSpam() { pHand.push({ shape: "Circle", num: 1 }); updateUI(); toggleCheatMenu(false); }
     function cPeekDeck() { if(deck.length>0) alert(`Next card is: ${deck[deck.length-1].num} ${deck[deck.length-1].shape}`); toggleCheatMenu(false); }
     function cClearCPU() { cpuHand = []; checkWin(); toggleCheatMenu(false); }
