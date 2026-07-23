@@ -3,582 +3,442 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dot.40 Whot - Powered by Hadriel & Ajayi</title>
+  <title>Dot.40 Whot Game - Hadriel & Ajayi</title>
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: Arial, sans-serif;
     }
 
     body {
-      background-color: #0b132b;
+      background-color: #121212;
       color: #ffffff;
       display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 15px;
-    }
-
-    .app-container {
-      background: #1c2541;
-      width: 100%;
-      max-width: 800px;
-      border-radius: 20px;
-      padding: 20px;
-      box-shadow: 0 15px 30px rgba(0,0,0,0.6);
-      border: 2px solid #3a506b;
-      display: flex;
       flex-direction: column;
-      gap: 16px;
-    }
-
-    /* HEADER & BRANDING */
-    .header {
-      text-align: center;
-      border-bottom: 2px solid #3a506b;
-      padding-bottom: 10px;
-    }
-
-    .header h1 {
-      color: #6fffe9;
-      font-size: 28px;
-      letter-spacing: 1.5px;
-    }
-
-    .header .credits {
-      font-size: 12px;
-      color: #5bc0be;
-      margin-top: 4px;
-    }
-
-    /* NAVIGATION / MODES */
-    .nav-bar {
-      display: flex;
-      gap: 10px;
+      align-items: center;
       justify-content: center;
+      min-height: 100vh;
+      padding: 10px;
     }
 
-    .nav-btn {
-      background: #3a506b;
-      color: white;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 10px;
-      font-weight: bold;
+    .header-bar {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .header-bar h1 {
+      color: #00e676;
+      font-size: 26px;
+      margin-bottom: 2px;
+    }
+
+    .header-bar p {
+      font-size: 12px;
+      color: #b0bec5;
+    }
+
+    .mode-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .mode-btn {
+      background: #263238;
+      color: #fff;
+      border: 1px solid #455a64;
+      padding: 6px 12px;
+      border-radius: 6px;
       cursor: pointer;
-      transition: 0.2s;
+      font-size: 12px;
+      font-weight: bold;
     }
 
-    .nav-btn.active, .nav-btn:hover {
-      background: #5bc0be;
-      color: #0b132b;
+    .mode-btn.active {
+      background: #00e676;
+      color: #000;
+      border-color: #00e676;
     }
 
-    /* GAME BOARD LAYOUT */
-    .game-area {
+    .game-board {
+      width: 100%;
+      max-width: 500px;
+      background: #1e1e1e;
+      border: 2px solid #333;
+      border-radius: 12px;
+      padding: 15px;
       display: flex;
       flex-direction: column;
       gap: 15px;
-      background: #0b132b;
-      padding: 15px;
-      border-radius: 15px;
-      border: 1px solid #3a506b;
     }
 
-    .opponent-hand, .player-hand {
+    .hand-label {
+      font-size: 12px;
+      color: #00e676;
+      font-weight: bold;
+    }
+
+    .card-row {
       display: flex;
       gap: 8px;
       overflow-x: auto;
-      padding: 10px 5px;
-      min-height: 110px;
+      padding: 5px;
+      min-height: 90px;
       align-items: center;
     }
 
-    .play-center {
+    .center-table {
       display: flex;
       justify-content: space-around;
       align-items: center;
-      background: #1c2541;
-      padding: 15px;
-      border-radius: 12px;
+      background: #2a2a2a;
+      padding: 12px;
+      border-radius: 8px;
     }
 
     .card {
-      width: 65px;
-      height: 95px;
+      width: 55px;
+      height: 80px;
       background: #ffffff;
-      color: #0b132b;
-      border-radius: 8px;
+      color: #000000;
+      border-radius: 6px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 6px;
+      padding: 5px;
       font-weight: bold;
-      font-size: 14px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+      font-size: 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.5);
       cursor: pointer;
-      user-select: none;
-      transition: transform 0.2s;
       flex-shrink: 0;
     }
 
-    .card:hover {
-      transform: translateY(-8px);
-    }
-
     .card.back {
-      background: linear-gradient(135deg, #3a506b, #0b132b);
-      border: 2px solid #5bc0be;
-      color: #5bc0be;
+      background: #00e676;
+      color: #000000;
       justify-content: center;
       align-items: center;
-      font-size: 12px;
+      font-size: 10px;
+      font-weight: bold;
     }
 
-    .card-symbol {
-      text-align: center;
-      font-size: 22px;
-    }
-
-    /* ACTION CONTROLS */
-    .controls {
+    .controls-row {
       display: flex;
       gap: 10px;
-      flex-wrap: wrap;
+      margin-top: 10px;
+      width: 100%;
+      max-width: 500px;
     }
 
-    .btn {
+    .action-btn {
       flex: 1;
-      min-width: 120px;
-      background: #5bc0be;
-      color: #0b132b;
+      padding: 10px;
+      background: #00e676;
+      color: #000;
       border: none;
-      padding: 12px;
-      border-radius: 10px;
+      border-radius: 6px;
       font-weight: bold;
       cursor: pointer;
-      text-align: center;
-      transition: 0.2s;
     }
 
-    .btn:hover {
-      background: #6fffe9;
-    }
-
-    .btn-cheat {
-      background: #ff0055;
+    .cheat-trigger {
+      background: #ff1744;
       color: white;
     }
 
-    .btn-cheat:hover {
-      background: #ff3377;
-    }
-
-    .log-box {
-      background: #0b132b;
-      padding: 10px;
-      border-radius: 10px;
-      height: 90px;
+    .log-area {
+      width: 100%;
+      max-width: 500px;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 6px;
+      height: 70px;
+      margin-top: 10px;
+      padding: 8px;
+      font-size: 11px;
+      color: #00e676;
       overflow-y: auto;
-      font-size: 12px;
-      border: 1px solid #3a506b;
-      color: #6fffe9;
     }
 
-    /* CHEAT MENU MODAL */
-    .modal {
+    /* MODAL */
+    .modal-overlay {
       display: none;
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.85);
       justify-content: center;
       align-items: center;
       z-index: 100;
     }
 
-    .modal-content {
-      background: #1c2541;
-      padding: 20px;
-      border-radius: 16px;
+    .modal-box {
+      background: #1e1e1e;
+      border: 2px solid #ff1744;
+      padding: 15px;
+      border-radius: 10px;
       width: 90%;
-      max-width: 500px;
-      border: 2px solid #ff0055;
+      max-width: 400px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      max-height: 80vh;
-      overflow-y: auto;
+      gap: 8px;
     }
 
     .cheat-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      gap: 6px;
     }
 
     .cheat-btn {
-      background: #ff0055;
+      background: #ff1744;
       color: white;
       border: none;
-      padding: 10px;
-      border-radius: 8px;
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 10px;
       font-weight: bold;
-      font-size: 11px;
       cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-  <div class="app-container">
-    <div class="header">
-      <h1>🎴 DOT.40 WHOT</h1>
-      <div class="credits">Created & Designed by <b>Hadriel & Ajayi</b></div>
-    </div>
-
-    <!-- MODE SWITCHER -->
-    <div class="nav-bar">
-      <button class="nav-btn active" onclick="setMode('single')">🕹️ Single Player</button>
-      <button class="nav-btn" onclick="setMode('practice')">📘 Practice Mode</button>
-      <button class="nav-btn" onclick="openCheatModal()">⚡ 10 Cheats Menu</button>
-    </div>
-
-    <!-- GAME BOARD -->
-    <div class="game-area">
-      <div style="font-size: 12px; color: #5bc0be;">
-        🤖 <b>CPU Hand:</b> <span id="cpu-card-count">5 cards</span>
-      </div>
-      <div class="opponent-hand" id="cpu-hand"></div>
-
-      <div class="play-center">
-        <div>
-          <div style="font-size:11px; color:#94a3b8; text-align:center;">MARKET DECK</div>
-          <div class="card back" onclick="drawMarket()">
-            <div>DOT.40</div>
-            <div style="font-size:10px;" id="deck-count">30</div>
-          </div>
-        </div>
-
-        <div>
-          <div style="font-size:11px; color:#94a3b8; text-align:center;">PLAY PILE</div>
-          <div id="played-card"></div>
-        </div>
-      </div>
-
-      <div style="font-size: 12px; color: #5bc0be;">
-        🔴 <b>Your Hand:</b>
-      </div>
-      <div class="player-hand" id="player-hand"></div>
-    </div>
-
-    <!-- CONTROLS & LOGS -->
-    <div class="controls">
-      <button class="btn" onclick="drawMarket()">📥 Draw Card</button>
-      <button class="btn btn-cheat" onclick="openCheatModal()">⚡ Cheats (10)</button>
-    </div>
-
-    <div class="log-box" id="logs">
-      <div>Welcome to Dot.40 Whot! Choose cards matching shape or number to play.</div>
-    </div>
+  <div class="header-bar">
+    <h1>Dot.40 WHOT</h1>
+    <p>By Hadriel & Ajayi</p>
   </div>
 
-  <!-- 10 CHEATS MODAL -->
-  <div class="modal" id="cheat-modal">
-    <div class="modal-content">
-      <h3 style="color:#ff0055; text-align:center;">⚡ Dot.40 Ultimate 10 Cheats Menu</h3>
-      <div class="cheat-grid">
-        <button class="cheat-btn" onclick="cheatPeekCPU()">1. 👁️ Peek CPU Hand</button>
-        <button class="cheat-btn" onclick="cheatForceWhot()">2. 🃏 Force Whot 20 Card</button>
-        <button class="cheat-btn" onclick="cheatDraw5CPU()">3. 🎁 Make CPU Draw 5</button>
-        <button class="cheat-btn" onclick="cheatClearPlayerHand()">4. 🚀 Instant Win</button>
-        <button class="cheat-btn" onclick="cheatSwapHands()">5. 🔄 Swap Hands with CPU</button>
+  <div class="mode-bar">
+    <button class="mode-btn active" id="btn-single" onclick="switchMode('single')">Single Player</button>
+    <button class="mode-btn" id="btn-practice" onclick="switchMode('practice')">Practice Mode</button>
+  </div>
 
-        <button class="cheat-btn" onclick="cheatSkipCPUTurn()">6. 🚫 Skip CPU Turn</button>
-        <button class="cheat-btn" onclick="cheatUnlimitedMarket()">7. 💰 Infinite Cash/Draw</button>
-        <button class="cheat-btn" onclick="cheatSeeDeckTop()">8. 🔮 See Deck Top Card</button>
-        <button class="cheat-btn" onclick="cheatLockCPUMarket()">9. 🔒 Lock CPU Market</button>
-        <button class="cheat-btn" onclick="cheatSuperHoldOn()">10. 👑 Super Hold On (Keep Turn)</button>
+  <div class="game-board">
+    <div class="hand-label">CPU HAND (<span id="cpu-count">5</span>)</div>
+    <div class="card-row" id="cpu-row"></div>
+
+    <div class="center-table">
+      <div>
+        <div style="font-size:10px; color:#aaa; text-align:center; margin-bottom:2px;">MARKET</div>
+        <div class="card back" onclick="playerDraw()">
+          <div>DOT.40</div>
+          <div id="deck-size" style="font-size:9px;">30</div>
+        </div>
       </div>
-      <button class="btn" style="margin-top:10px;" onclick="closeCheatModal()">Close Menu</button>
+
+      <div>
+        <div style="font-size:10px; color:#aaa; text-align:center; margin-bottom:2px;">PLAY PILE</div>
+        <div id="played-card"></div>
+      </div>
+    </div>
+
+    <div class="hand-label">YOUR HAND</div>
+    <div class="card-row" id="player-row"></div>
+  </div>
+
+  <div class="controls-row">
+    <button class="action-btn" onclick="playerDraw()">Draw Card</button>
+    <button class="action-btn cheat-trigger" onclick="toggleCheatMenu(true)">10 Cheats Menu</button>
+  </div>
+
+  <div class="log-area" id="log-box">Welcome to Dot.40 Whot!</div>
+
+  <!-- CHEATS MODAL -->
+  <div class="modal-overlay" id="cheat-modal">
+    <div class="modal-box">
+      <h3 style="color:#ff1744; text-align:center; font-size:14px;">10 Effective Cheats</h3>
+      <div class="cheat-grid">
+        <button class="cheat-btn" onclick="cPeek()">1. Peek CPU Hand</button>
+        <button class="cheat-btn" onclick="cAddWhot()">2. Give Whot (20)</button>
+        <button class="cheat-btn" onclick="cCPUDraw5()">3. Force CPU Draw 5</button>
+        <button class="cheat-btn" onclick="cInstantWin()">4. Instant Win</button>
+        <button class="cheat-btn" onclick="cSwap()">5. Swap Hands</button>
+        <button class="cheat-btn" onclick="cSkipCPU()">6. Skip CPU Turn</button>
+        <button class="cheat-btn" onclick="cHoldOnSpam()">7. Add Hold-On Cards</button>
+        <button class="cheat-btn" onclick="cPeekDeck()">8. Peek Market Top</button>
+        <button class="cheat-btn" onclick="cClearCPU()">9. Wipe CPU Market</button>
+        <button class="cheat-btn" onclick="cInfiniteTurns()">10. Infinite Turns</button>
+      </div>
+      <button class="action-btn" style="margin-top:5px; padding:6px;" onclick="toggleCheatMenu(false)">Close</button>
     </div>
   </div>
 
   <script>
     const shapes = ["Circle", "Triangle", "Cross", "Square", "Star"];
-    const symbolMap = { "Circle": "🔴", "Triangle": "🔺", "Cross": "✖️", "Square": "⬛", "Star": "⭐", "Whot": "🃏" };
+    const symbols = { "Circle": "●", "Triangle": "▲", "Cross": "✖", "Square": "■", "Star": "★", "Whot": "W" };
 
     let deck = [];
-    let playerHand = [];
+    let pHand = [];
     let cpuHand = [];
     let topCard = null;
-    let gameMode = 'single'; // 'single' or 'practice'
-    let isPlayerTurn = true;
-    let cpuPeekActive = false;
+    let mode = "single"; 
+    let pTurn = true;
+    let cpuVisible = false;
 
-    function buildDeck() {
+    function createDeck() {
       deck = [];
-      // standard Whot distribution
-      shapes.forEach(shape => {
-        [1, 2, 3, 4, 5, 7, 8, 10, 11, 12, 13, 14].forEach(num => {
-          deck.push({ shape, num });
-        });
+      shapes.forEach(s => {
+        [1, 2, 3, 4, 5, 7, 8, 10, 11, 12, 13, 14].forEach(n => deck.push({ shape: s, num: n }));
       });
-      // Add 4 Whot (20) cards
-      for(let i=0; i<4; i++) deck.push({ shape: "Whot", num: 20 });
+      for (let i = 0; i < 4; i++) deck.push({ shape: "Whot", num: 20 });
       deck.sort(() => Math.random() - 0.5);
     }
 
     function initGame() {
-      buildDeck();
-      playerHand = deck.splice(0, 5);
+      createDeck();
+      pHand = deck.splice(0, 5);
       cpuHand = deck.splice(0, 5);
       topCard = deck.pop();
-      isPlayerTurn = true;
-      log(`🎮 Dot.40 Whot started! Initial card: ${topCard.num} ${symbolMap[topCard.shape]}`);
-      render();
+      pTurn = true;
+      writeLog("New game started!");
+      updateUI();
     }
 
-    function setMode(mode) {
-      gameMode = mode;
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      event.target.classList.add('active');
-
-      if (mode === 'practice') {
-        log("📘 Practice Mode active! Look out for interactive move advice in logs.");
-      } else {
-        log("🕹️ Single Player Mode active against CPU.");
-      }
+    function switchMode(newMode) {
+      mode = newMode;
+      document.getElementById('btn-single').classList.toggle('active', mode === 'single');
+      document.getElementById('btn-practice').classList.toggle('active', mode === 'practice');
+      writeLog(mode === 'practice' ? "Practice Mode ON: Watch logs for helpful tips." : "Single Player Mode active.");
       initGame();
     }
 
-    function render() {
-      // Render Deck count
-      document.getElementById('deck-count').innerText = `${deck.length} Left`;
+    function updateUI() {
+      document.getElementById('deck-size').innerText = deck.length;
+      document.getElementById('played-card').innerHTML = cardHTML(topCard);
 
-      // Render Played Card
-      document.getElementById('played-card').innerHTML = renderCardHTML(topCard);
-
-      // Render Player Hand
-      const pContainer = document.getElementById('player-hand');
-      pContainer.innerHTML = '';
-      playerHand.forEach((card, index) => {
-        const cardDiv = document.createElement('div');
-        cardDiv.innerHTML = renderCardHTML(card);
-        cardDiv.onclick = () => playCard(index);
-        pContainer.appendChild(cardDiv);
+      // Render Player
+      const pRow = document.getElementById('player-row');
+      pRow.innerHTML = '';
+      pHand.forEach((c, idx) => {
+        const div = document.createElement('div');
+        div.innerHTML = cardHTML(c);
+        div.onclick = () => playCard(idx);
+        pRow.appendChild(div);
       });
 
-      // Render CPU Hand
-      const cpuContainer = document.getElementById('cpu-hand');
-      cpuContainer.innerHTML = '';
-      document.getElementById('cpu-card-count').innerText = `${cpuHand.length} cards`;
-
-      cpuHand.forEach((card) => {
-        const cardDiv = document.createElement('div');
-        if (cpuPeekActive) {
-          cardDiv.innerHTML = renderCardHTML(card);
-        } else {
-          cardDiv.className = 'card back';
-          cardDiv.innerHTML = '<div>DOT.40</div>';
-        }
-        cpuContainer.appendChild(cardDiv);
+      // Render CPU
+      const cpuRow = document.getElementById('cpu-row');
+      cpuRow.innerHTML = '';
+      document.getElementById('cpu-count').innerText = cpuHand.length;
+      cpuHand.forEach(c => {
+        const div = document.createElement('div');
+        div.innerHTML = cpuVisible ? cardHTML(c) : `<div class="card back"><div>DOT.40</div></div>`;
+        cpuRow.appendChild(div);
       });
 
-      // Practice Hints
-      if (gameMode === 'practice' && isPlayerTurn) {
-        givePracticeHint();
-      }
+      if (mode === 'practice' && pTurn) giveHint();
     }
 
-    function renderCardHTML(card) {
+    function cardHTML(c) {
       return `
         <div class="card">
-          <div>${card.num}</div>
-          <div class="card-symbol">${symbolMap[card.shape] || '🃏'}</div>
-          <div style="text-align:right; font-size:10px;">${card.shape}</div>
+          <div>${c.num}</div>
+          <div style="text-align:center; font-size:16px;">${symbols[c.shape]}</div>
+          <div style="font-size:8px; text-align:right;">${c.shape}</div>
         </div>
       `;
     }
 
-    function playCard(index) {
-      if (!isPlayerTurn) return;
-
-      const card = playerHand[index];
-      if (card.num === 20 || card.shape === topCard.shape || card.num === topCard.num) {
-        playerHand.splice(index, 1);
-        topCard = card;
-        log(`🔴 You played ${card.num} ${symbolMap[card.shape]}`);
-
+    function playCard(idx) {
+      if (!pTurn) return;
+      const c = pHand[idx];
+      if (c.num === 20 || c.shape === topCard.shape || c.num === topCard.num) {
+        pHand.splice(idx, 1);
+        topCard = c;
+        writeLog(`You played ${c.num} ${c.shape}`);
+        
         if (checkWin()) return;
 
-        // Special card logic
-        if (card.num === 1) {
-          log("⚡ Hold On! Play again.");
-        } else if (card.num === 2) {
-          log("⚡ Pick Two! CPU gets 2 cards.");
-          cpuHand.push(...deck.splice(0, 2));
-        } else if (card.num === 5) {
-          log("⚡ Pick Three! CPU gets 3 cards.");
-          cpuHand.push(...deck.splice(0, 3));
+        if (c.num === 1) {
+          writeLog("Hold On! Play again.");
         } else {
-          isPlayerTurn = false;
-          setTimeout(cpuPlay, 1200);
+          pTurn = false;
+          setTimeout(cpuAction, 1000);
         }
-        render();
+        updateUI();
       } else {
-        log("❌ Invalid card! Must match number or shape.");
+        writeLog("Can't play that card!");
       }
     }
 
-    function drawMarket() {
-      if (!isPlayerTurn) return;
-      if (deck.length > 0) {
-        let drawn = deck.pop();
-        playerHand.push(drawn);
-        log(`📥 You drew a card: ${drawn.num} ${symbolMap[drawn.shape]}`);
-        isPlayerTurn = false;
-        render();
-        setTimeout(cpuPlay, 1200);
-      }
+    function playerDraw() {
+      if (!pTurn || deck.length === 0) return;
+      pHand.push(deck.pop());
+      writeLog("You drew a card.");
+      pTurn = false;
+      updateUI();
+      setTimeout(cpuAction, 1000);
     }
 
-    function cpuPlay() {
+    function cpuAction() {
       if (cpuHand.length === 0) return;
+      let validIdx = cpuHand.findIndex(c => c.num === 20 || c.shape === topCard.shape || c.num === topCard.num);
 
-      // Find valid card
-      let playableIdx = cpuHand.findIndex(c => c.num === 20 || c.shape === topCard.shape || c.num === topCard.num);
-
-      if (playableIdx !== -1) {
-        let card = cpuHand.splice(playableIdx, 1)[0];
-        topCard = card;
-        log(`🤖 CPU played ${card.num} ${symbolMap[card.shape]}`);
-
+      if (validIdx !== -1) {
+        let c = cpuHand.splice(validIdx, 1)[0];
+        topCard = c;
+        writeLog(`CPU played ${c.num} ${c.shape}`);
         if (checkWin()) return;
-
-        if (card.num === 1) {
-          log("⚡ CPU played Hold On and goes again!");
-          setTimeout(cpuPlay, 1000);
+        if (c.num === 1) {
+          writeLog("CPU played Hold On and goes again!");
+          setTimeout(cpuAction, 1000);
           return;
-        } else if (card.num === 2) {
-          log("⚡ CPU played Pick Two! You draw 2 cards.");
-          playerHand.push(...deck.splice(0, 2));
-        } else if (card.num === 5) {
-          log("⚡ CPU played Pick Three! You draw 3 cards.");
-          playerHand.push(...deck.splice(0, 3));
         }
-      } else {
-        if (deck.length > 0) {
-          cpuHand.push(deck.pop());
-          log("📥 CPU went to market and drew a card.");
-        }
+      } else if (deck.length > 0) {
+        cpuHand.push(deck.pop());
+        writeLog("CPU drew a card.");
       }
 
-      isPlayerTurn = true;
-      render();
+      pTurn = true;
+      updateUI();
     }
 
-    function givePracticeHint() {
-      let playable = playerHand.filter(c => c.num === 20 || c.shape === topCard.shape || c.num === topCard.num);
-      if (playable.length > 0) {
-        log(`💡 [Practice Hint]: You have ${playable.length} valid card(s) to play!`);
+    function giveHint() {
+      let matches = pHand.filter(c => c.num === 20 || c.shape === topCard.shape || c.num === topCard.num);
+      if (matches.length > 0) {
+        writeLog(`[Practice Hint] You have ${matches.length} playable card(s).`);
       } else {
-        log(`💡 [Practice Hint]: No playable cards. Tap 'Draw Card' to take from Market.`);
+        writeLog(`[Practice Hint] No match available. Tap 'Draw Card'.`);
       }
     }
 
     function checkWin() {
-      if (playerHand.length === 0) {
-        alert("🎉 CONGRATULATIONS! You won the Dot.40 Whot game!");
+      if (pHand.length === 0) {
+        alert("You Won Dot.40 Whot!");
         initGame();
         return true;
-      } else if (cpuHand.length === 0) {
-        alert("💥 CPU Won! Better luck next time.");
+      }
+      if (cpuHand.length === 0) {
+        alert("CPU Won!");
         initGame();
         return true;
       }
       return false;
     }
 
-    function log(msg) {
-      const logBox = document.getElementById('logs');
-      const entry = document.createElement('div');
-      entry.innerText = msg;
-      logBox.prepend(entry);
+    function writeLog(txt) {
+      const box = document.getElementById('log-box');
+      box.innerText = txt + "\n" + box.innerText;
     }
 
-    /* 10 CHEAT FUNCTIONS */
-    function openCheatModal() { document.getElementById('cheat-modal').style.display = 'flex'; }
-    function closeCheatModal() { document.getElementById('cheat-modal').style.display = 'none'; }
-
-    function cheatPeekCPU() {
-      cpuPeekActive = !cpuPeekActive;
-      log(`⚡ Cheat 1: CPU Hand Peek ${cpuPeekActive ? 'Enabled' : 'Disabled'}`);
-      render(); closeCheatModal();
+    function toggleCheatMenu(show) {
+      document.getElementById('cheat-modal').style.display = show ? 'flex' : 'none';
     }
 
-    function cheatForceWhot() {
-      playerHand.unshift({ shape: "Whot", num: 20 });
-      log("⚡ Cheat 2: Added Whot 20 Card to your hand!");
-      render(); closeCheatModal();
-    }
+    /* 10 CHEATS */
+    function cPeek() { cpuVisible = !cpuVisible; updateUI(); toggleCheatMenu(false); }
+    function cAddWhot() { pHand.push({ shape: "Whot", num: 20 }); updateUI(); toggleCheatMenu(false); }
+    function cCPUDraw5() { if(deck.length>=5) cpuHand.push(...deck.splice(0,5)); updateUI(); toggleCheatMenu(false); }
+    function cInstantWin() { pHand = []; checkWin(); toggleCheatMenu(false); }
+    function cSwap() { let t = [...pHand]; pHand = [...cpuHand]; cpuHand = t; updateUI(); toggleCheatMenu(false); }
+    function cSkipCPU() { pTurn = true; writeLog("Skipped CPU turn!"); updateUI(); toggleCheatMenu(false); }
+    function cHoldOnSpam() { pHand.push({ shape: "Circle", num: 1 }); updateUI(); toggleCheatMenu(false); }
+    function cPeekDeck() { if(deck.length>0) alert(`Next card is: ${deck[deck.length-1].num} ${deck[deck.length-1].shape}`); toggleCheatMenu(false); }
+    function cClearCPU() { cpuHand = []; checkWin(); toggleCheatMenu(false); }
+    function cInfiniteTurns() { pTurn = true; writeLog("Infinite turns mode enabled!"); toggleCheatMenu(false); }
 
-    function cheatDraw5CPU() {
-      if (deck.length >= 5) {
-        cpuHand.push(...deck.splice(0, 5));
-        log("⚡ Cheat 3: Forced CPU to draw 5 cards!");
-        render(); closeCheatModal();
-      }
-    }
-
-    function cheatClearPlayerHand() {
-      playerHand = [];
-      checkWin();
-      closeCheatModal();
-    }
-
-    function cheatSwapHands() {
-      let temp = [...playerHand];
-      playerHand = [...cpuHand];
-      cpuHand = temp;
-      log("⚡ Cheat 5: Swapped hands with CPU!");
-      render(); closeCheatModal();
-    }
-
-    function cheatSkipCPUTurn() {
-      isPlayerTurn = true;
-      log("⚡ Cheat 6: Skipped CPU Turn! Your turn again.");
-      render(); closeCheatModal();
-    }
-
-    function cheatUnlimitedMarket() {
-      for(let i=0; i<3; i++) playerHand.push({ shape: shapes[Math.floor(Math.random()*shapes.length)], num: 1 });
-      log("⚡ Cheat 7: Spawned 3 powerful Hold-On cards!");
-      render(); closeCheatModal();
-    }
-
-    function cheatSeeDeckTop() {
-      if (deck.length > 0) {
-        let top = deck[deck.length - 1];
-        alert(`🔮 Top card in market is: ${top.num} ${top.shape}`);
-      }
-      closeCheatModal();
-    }
-
-    function cheatLockCPUMarket() {
-      log("⚡ Cheat 9: CPU Market access temporarily locked!");
-      closeCheatModal();
-    }
-
-    function cheatSuperHoldOn() {
-      isPlayerTurn = true;
-      log("⚡ Cheat 10: Super Hold On active! You hold infinite turns.");
-      render(); closeCheatModal();
-    }
-
-    // Initialize Game
     initGame();
   </script>
 </body>
