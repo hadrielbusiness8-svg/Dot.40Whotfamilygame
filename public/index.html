@@ -3,215 +3,505 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PlayWhot Multiplayer</title>
-  <script src="/socket.io/socket.io.js"></script>
+  <title>Dot.40 WHOT - Hadriel & Ajayi</title>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
-    :root {
-      --felt-green: #0d5c2e;
-      --felt-dark: #073a1d;
-      --card-gold: #f59e0b;
-      --card-bg: #fffbf0;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; user-select: none; }
-    body { background: radial-gradient(circle, var(--felt-green) 40%, var(--felt-dark) 100%); height: 100vh; display: flex; flex-direction: column; color: white; overflow: hidden; }
+    body {
+      background: #0d381e; /* Classic Whot Dark Green Felt Background */
+      color: #ffffff;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
 
-    .app-bar { height: 50px; background: rgba(0,0,0,0.4); display: flex; justify-content: space-between; align-items: center; padding: 0 1.5rem; }
-    .brand { font-size: 1.2rem; font-weight: 900; color: #fbbf24; }
-    .status-badge { background: rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; }
+    /* TOP HEADER & NAVBAR */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 25px;
+      background: rgba(0, 0, 0, 0.2);
+    }
 
-    .lobby { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 200; }
-    .lobby-box { background: #1e293b; padding: 2rem; border-radius: 16px; text-align: center; max-width: 350px; width: 90%; }
-    .lobby-box input { width: 100%; padding: 10px; margin: 8px 0; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white; }
-    .lobby-box button { width: 100%; padding: 10px; background: #f59e0b; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    .brand-title {
+      font-size: 22px;
+      font-weight: 900;
+      color: #facc15;
+      letter-spacing: 1px;
+    }
 
-    .table-container { flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 1rem 2rem; }
-    .player-profile { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); padding: 6px 14px; border-radius: 20px; width: fit-content; }
+    .sub-brand {
+      font-size: 11px;
+      color: #a7f3d0;
+      font-weight: normal;
+    }
 
-    .center-arena { display: flex; justify-content: center; align-items: center; gap: 2rem; margin: auto 0; }
-    .card { width: 80px; height: 120px; background: var(--card-bg); border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between; padding: 6px; color: #1e293b; position: relative; cursor: pointer; border: 2px solid #cbd5e1; box-shadow: 0 8px 16px rgba(0,0,0,0.4); }
-    .card.back { background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-color: #60a5fa; }
-    .card.whot-special { background: linear-gradient(135deg, #fef08a, #facc15); border-color: #d97706; }
-    .card-num { font-weight: 900; font-size: 1rem; }
-    .card-symbol { font-size: 1.8rem; text-align: center; }
+    .status-pill {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
 
-    .hand { display: flex; justify-content: center; min-height: 130px; }
-    .player-hand-container .card { margin: 0 -12px; transition: transform 0.2s; }
-    .player-hand-container .card:hover { transform: translateY(-10px); z-index: 10; }
-    .computer-hand-container .card { margin: 0 -20px; pointer-events: none; }
+    /* MODE BUTTONS */
+    .mode-bar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 8px;
+      background: rgba(0,0,0,0.3);
+    }
 
-    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 100; }
-    .modal-card { background: #1e293b; padding: 1.5rem; border-radius: 16px; text-align: center; }
-    .shape-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 1rem; }
-    .shape-btn { background: #334155; border: 1px solid #475569; color: white; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 1.2rem; }
+    .mode-btn {
+      background: #166534;
+      color: white;
+      border: 1px solid #22c55e;
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-weight: bold;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .mode-btn.active {
+      background: #facc15;
+      color: #000;
+      border-color: #facc15;
+    }
+
+    .btn-cheat-open {
+      background: #ef4444;
+      border-color: #f87171;
+    }
+
+    /* GREEN FELT GAME BOARD */
+    .board {
+      flex: 1;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px;
+    }
+
+    /* PLAYER BADGES */
+    .player-badge {
+      background: #111827;
+      padding: 8px 18px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: bold;
+      font-size: 14px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      width: fit-content;
+    }
+
+    .opponent-badge {
+      align-self: flex-start;
+    }
+
+    .player-badge.self {
+      align-self: flex-end;
+    }
+
+    /* PLAY MAT CENTER */
+    .center-mat {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    /* CARDS STYLING */
+    .card {
+      width: 90px;
+      height: 130px;
+      border-radius: 10px;
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.4);
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-10px);
+    }
+
+    .card.deck-back {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border: 3px solid #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .card.face {
+      background: white;
+      color: #1e293b;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 1px solid #cbd5e1;
+    }
+
+    .card-num {
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .card-symbol {
+      text-align: center;
+      font-size: 32px;
+    }
+
+    .card-shape-name {
+      text-align: right;
+      font-size: 10px;
+      font-weight: bold;
+      color: #64748b;
+    }
+
+    /* HAND RACKS */
+    .hand-rack {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      max-width: 80%;
+      padding: 10px;
+    }
+
+    .opp-hand-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .self-hand-container {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 15px;
+    }
+
+    /* LOG OVERLAY */
+    .log-box {
+      position: absolute;
+      bottom: 75px;
+      left: 20px;
+      background: rgba(0,0,0,0.6);
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 300px;
+      font-size: 12px;
+      color: #a7f3d0;
+      max-height: 80px;
+      overflow-y: auto;
+    }
+
+    /* CHEATS MODAL */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .modal-content {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 420px;
+      border: 2px solid #ef4444;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .cheat-btn {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 11px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
-  <div class="lobby" id="lobby">
-    <div class="lobby-box">
-      <h2 style="color: #fbbf24; margin-bottom: 1rem;">Join Whot Room</h2>
-      <input type="text" id="player-name-input" placeholder="Your Name" value="Player 1">
-      <input type="text" id="room-id-input" placeholder="Room Code (e.g., 1001)" value="1001">
-      <button onclick="joinGame()">Join Room</button>
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <div class="brand-title">DOT.40 WHOT ONLINE</div>
+      <div class="sub-brand">By Hadriel & Ajayi</div>
+    </div>
+    <div class="status-pill" id="status-text">Single Player Active</div>
+  </div>
+
+  <!-- MODE NAVBAR -->
+  <div class="mode-bar">
+    <button class="mode-btn active" id="btn-sp" onclick="setMode('sp')">Single Player</button>
+    <button class="mode-btn" id="btn-mp" onclick="setMode('mp')">Online Multiplayer</button>
+    <button class="mode-btn" id="btn-pr" onclick="setMode('pr')">Practice Mode</button>
+    <button class="mode-btn btn-cheat-open" onclick="openCheats()">⚡ 10 Cheats</button>
+  </div>
+
+  <!-- BOARD -->
+  <div class="board">
+    <!-- OPPONENT -->
+    <div class="opp-hand-container">
+      <div class="player-badge opponent-badge">
+        🤖 <span id="opp-name">Opponent</span> (<span id="opp-count">5</span>)
+      </div>
+      <div class="hand-rack" id="opp-rack"></div>
+    </div>
+
+    <!-- CENTER CARDS -->
+    <div class="center-mat">
+      <div class="card deck-back" onclick="drawCard()">
+        <div style="text-align:center;">
+          <div>DOT.40</div>
+          <div style="font-size:10px;" id="deck-left">30</div>
+        </div>
+      </div>
+      <div id="played-card-slot"></div>
+    </div>
+
+    <!-- LOGS -->
+    <div class="log-box" id="log-display">Welcome to Dot.40 Whot!</div>
+
+    <!-- PLAYER -->
+    <div class="self-hand-container">
+      <div class="hand-rack" id="self-rack"></div>
+      <div class="player-badge self">
+        👤 Player 1
+      </div>
     </div>
   </div>
 
-  <div class="app-bar">
-    <div class="brand">PLAYWHOT ONLINE</div>
-    <div class="status-badge" id="status-text">Connecting...</div>
-  </div>
-
-  <div class="table-container">
-    <div class="player-profile">
-      <div>🤖 <span id="opp-name">Opponent</span> (<span id="opp-count">0</span>)</div>
-    </div>
-
-    <div class="hand computer-hand-container" id="opp-hand"></div>
-
-    <div class="center-arena">
-      <div class="card back" id="draw-deck"></div>
-      <div id="top-card-container"></div>
-    </div>
-
-    <div class="hand player-hand-container" id="my-hand"></div>
-
-    <div class="player-profile" style="align-self: flex-end;">
-      <div>👤 <span id="my-name">You</span></div>
-    </div>
-  </div>
-
-  <div class="modal" id="shape-modal">
-    <div class="modal-card">
-      <h3 style="color: #fbbf24;">WHOT! Choose Shape</h3>
-      <div class="shape-grid" id="shape-buttons"></div>
+  <!-- CHEATS MODAL -->
+  <div class="modal" id="cheat-modal">
+    <div class="modal-content">
+      <h3 style="color:#ef4444; text-align:center;">⚡ Dot.40 10 Cheats Menu</h3>
+      <div class="cheat-grid">
+        <button class="cheat-btn" onclick="cheatPeek()">1. 👁️ Peek Opponent</button>
+        <button class="cheat-btn" onclick="cheatAddWhot()">2. 🃏 Add Whot 20</button>
+        <button class="cheat-btn" onclick="cheatDraw5()">3. 🎁 Opponent Draw 5</button>
+        <button class="cheat-btn" onclick="cheatInstantWin()">4. 🚀 Instant Win</button>
+        <button class="cheat-btn" onclick="cheatSwap()">5. 🔄 Swap Hands</button>
+        <button class="cheat-btn" onclick="cheatSkip()">6. 🚫 Skip Opponent</button>
+        <button class="cheat-btn" onclick="cheatHoldOn()">7. 👑 Give Hold On</button>
+        <button class="cheat-btn" onclick="cheatPeekDeck()">8. 🔮 Peek Market Top</button>
+        <button class="cheat-btn" onclick="cheatWipeOpp()">9. 🔒 Wipe Opponent</button>
+        <button class="cheat-btn" onclick="cheatInfinite()">10. ⚡ Infinite Turns</button>
+      </div>
+      <button class="mode-btn" style="margin-top:10px;" onclick="closeCheats()">Close</button>
     </div>
   </div>
 
   <script>
-    const socket = io();
-    const SHAPES = ["Circle", "Square", "Triangle", "Cross", "Star"];
-    const SYMBOLS = { "Circle": "◯", "Square": "▢", "Triangle": "△", "Cross": "┼", "Star": "★", "Whot": "W" };
+    const shapes = ["Circle", "Triangle", "Cross", "Square", "Star"];
+    const symbols = { "Circle": "🔴", "Triangle": "🔺", "Cross": "✖️", "Square": "⬛", "Star": "⭐", "Whot": "🃏" };
 
-    let roomId = "";
+    let deck = [];
     let myHand = [];
-    let isMyTurn = false;
-    let pendingCardIndex = null;
+    let oppHand = [];
+    let topCard = null;
+    let mode = 'sp'; // sp, mp, pr
+    let myTurn = true;
+    let oppVisible = false;
 
-    function joinGame() {
-      const name = document.getElementById('player-name-input').value.trim();
-      roomId = document.getElementById('room-id-input').value.trim();
-
-      if (!roomId) return alert("Enter Room Code");
-
-      document.getElementById('my-name').innerText = name;
-      socket.emit('joinRoom', { roomId, playerName: name });
-      document.getElementById('lobby').style.display = 'none';
+    function buildDeck() {
+      deck = [];
+      shapes.forEach(s => {
+        [1, 2, 3, 4, 5, 7, 8, 10, 11, 12, 13, 14].forEach(n => deck.push({ shape: s, num: n }));
+      });
+      for(let i=0; i<4; i++) deck.push({ shape: "Whot", num: 20 });
+      deck.sort(() => Math.random() - 0.5);
     }
 
-    socket.on('waitingForOpponent', () => {
-      document.getElementById('status-text').innerText = "Waiting for an opponent to join...";
-    });
+    function initGame() {
+      buildDeck();
+      myHand = deck.splice(0, 5);
+      oppHand = deck.splice(0, 5);
+      topCard = deck.pop();
+      myTurn = true;
+      log("Game started!");
+      render();
+    }
 
-    socket.on('gameState', (data) => {
-      myHand = data.myHand;
-      isMyTurn = data.isMyTurn;
+    function setMode(m) {
+      mode = m;
+      document.getElementById('btn-sp').classList.toggle('active', mode==='sp');
+      document.getElementById('btn-mp').classList.toggle('active', mode==='mp');
+      document.getElementById('btn-pr').classList.toggle('active', mode==='pr');
 
-      document.getElementById('status-text').innerText = isMyTurn ? "Your Turn" : "Opponent's Turn";
-      document.getElementById('opp-name').innerText = data.opponentName;
-      document.getElementById('opp-count').innerText = data.opponentCardCount;
+      const status = document.getElementById('status-text');
+      if(mode==='sp') status.innerText = "Single Player Active";
+      if(mode==='pr') status.innerText = "Practice Mode Active";
+      if(mode==='mp') status.innerText = "Waiting for an opponent to join...";
 
-      render(data.topCard, data.opponentCardCount, data.currentDemand);
-    });
+      initGame();
+    }
 
-    socket.on('gameOver', ({ winner }) => {
-      alert(`Game Over! Winner: ${winner}`);
-      location.reload();
-    });
+    function render() {
+      document.getElementById('deck-left').innerText = deck.length;
+      document.getElementById('played-card-slot').innerHTML = cardHTML(topCard);
 
-    socket.on('playerDisconnected', () => {
-      alert("Opponent disconnected!");
-      location.reload();
-    });
-
-    function render(topCard, oppCount, demand) {
-      // Opponent hand
-      const oppContainer = document.getElementById('opp-hand');
-      oppContainer.innerHTML = '';
-      for (let i = 0; i < oppCount; i++) {
-        const c = document.createElement('div');
-        c.className = 'card back';
-        oppContainer.appendChild(c);
-      }
-
-      // My hand
-      const myContainer = document.getElementById('my-hand');
-      myContainer.innerHTML = '';
-      myHand.forEach((card, idx) => {
-        const el = createCardUI(card);
-        el.onclick = () => playCard(idx);
-        myContainer.appendChild(el);
+      // Render My Hand
+      const selfRack = document.getElementById('self-rack');
+      selfRack.innerHTML = '';
+      myHand.forEach((c, idx) => {
+        const div = document.createElement('div');
+        div.innerHTML = cardHTML(c);
+        div.onclick = () => playCard(idx);
+        selfRack.appendChild(div);
       });
 
-      // Top card
-      const topContainer = document.getElementById('top-card-container');
-      topContainer.innerHTML = '';
-      if (topCard) {
-        topContainer.appendChild(createCardUI(topCard));
-      }
+      // Render Opponent Hand
+      const oppRack = document.getElementById('opp-rack');
+      oppRack.innerHTML = '';
+      document.getElementById('opp-count').innerText = oppHand.length;
+      oppHand.forEach(c => {
+        const div = document.createElement('div');
+        if(oppVisible) {
+          div.innerHTML = cardHTML(c);
+        } else {
+          div.className = 'card deck-back';
+          div.innerHTML = '<div>DOT.40</div>';
+        }
+        oppRack.appendChild(div);
+      });
+
+      if(mode==='pr' && myTurn) giveHint();
     }
 
-    function createCardUI(card) {
-      const el = document.createElement('div');
-      el.className = 'card';
-      if (card.shape === "Whot") el.classList.add('whot-special');
-
-      const sym = SYMBOLS[card.shape];
-      const val = card.shape === "Whot" ? "20" : card.number;
-
-      el.innerHTML = `
-        <div class="card-num">${val}</div>
-        <div class="card-symbol">${sym}</div>
-        <div class="card-num" style="text-align:right">${val}</div>
+    function cardHTML(c) {
+      return `
+        <div class="card face">
+          <div class="card-num">${c.num}</div>
+          <div class="card-symbol">${symbols[c.shape]}</div>
+          <div class="card-shape-name">${c.shape}</div>
+        </div>
       `;
-      return el;
     }
 
-    document.getElementById('draw-deck').onclick = () => {
-      if (!isMyTurn) return;
-      socket.emit('drawCard', { roomId });
-    };
+    function playCard(idx) {
+      if(!myTurn) return;
+      const c = myHand[idx];
+      if(c.num === 20 || c.shape === topCard.shape || c.num === topCard.num) {
+        myHand.splice(idx, 1);
+        topCard = c;
+        log(`You played ${c.num} ${c.shape}`);
 
-    function playCard(index) {
-      if (!isMyTurn) return;
-      const card = myHand[index];
+        if(checkWin()) return;
 
-      if (card.shape === "Whot") {
-        pendingCardIndex = index;
-        openShapeModal();
+        if(c.num === 1) {
+          log("Hold On! Play again.");
+        } else {
+          myTurn = false;
+          setTimeout(oppTurn, 1000);
+        }
+        render();
       } else {
-        socket.emit('playCard', { roomId, cardIndex: index });
+        log("Cannot play that card!");
       }
     }
 
-    function openShapeModal() {
-      const modal = document.getElementById('shape-modal');
-      const grid = document.getElementById('shape-buttons');
-      grid.innerHTML = '';
-
-      SHAPES.forEach(s => {
-        const btn = document.createElement('button');
-        btn.className = 'shape-btn';
-        btn.innerText = `${SYMBOLS[s]} ${s}`;
-        btn.onclick = () => {
-          modal.style.display = 'none';
-          socket.emit('playCard', { roomId, cardIndex: pendingCardIndex, requestedShape: s });
-        };
-        grid.appendChild(btn);
-      });
-
-      modal.style.display = 'flex';
+    function drawCard() {
+      if(!myTurn || deck.length === 0) return;
+      myHand.push(deck.pop());
+      log("You drew a card.");
+      myTurn = false;
+      render();
+      setTimeout(oppTurn, 1000);
     }
+
+    function oppTurn() {
+      if(oppHand.length === 0) return;
+      let validIdx = oppHand.findIndex(c => c.num === 20 || c.shape === topCard.shape || c.num === topCard.num);
+
+      if(validIdx !== -1) {
+        let c = oppHand.splice(validIdx, 1)[0];
+        topCard = c;
+        log(`Opponent played ${c.num} ${c.shape}`);
+        if(checkWin()) return;
+        if(c.num === 1) {
+          log("Opponent played Hold On!");
+          setTimeout(oppTurn, 1000);
+          return;
+        }
+      } else if(deck.length > 0) {
+        oppHand.push(deck.pop());
+        log("Opponent drew a card.");
+      }
+
+      myTurn = true;
+      render();
+    }
+
+    function giveHint() {
+      let matches = myHand.filter(c => c.num === 20 || c.shape === topCard.shape || c.num === topCard.num);
+      log(`[Practice]: ${matches.length} playable card(s) in hand.`);
+    }
+
+    function checkWin() {
+      if(myHand.length === 0) { alert("You Won!"); initGame(); return true; }
+      if(oppHand.length === 0) { alert("Opponent Won!"); initGame(); return true; }
+      return false;
+    }
+
+    function log(m) {
+      const el = document.getElementById('log-display');
+      el.innerText = m + "\n" + el.innerText;
+    }
+
+    function openCheats() { document.getElementById('cheat-modal').style.display = 'flex'; }
+    function closeCheats() { document.getElementById('cheat-modal').style.display = 'none'; }
+
+    function cheatPeek() { oppVisible = !oppVisible; render(); closeCheats(); }
+    function cheatAddWhot() { myHand.push({shape:"Whot", num:20}); render(); closeCheats(); }
+    function cheatDraw5() { if(deck.length>=5) oppHand.push(...deck.splice(0,5)); render(); closeCheats(); }
+    function cheatInstantWin() { myHand = []; checkWin(); closeCheats(); }
+    function cheatSwap() { let t=[...myHand]; myHand=[...oppHand]; oppHand=t; render(); closeCheats(); }
+    function cheatSkip() { myTurn = true; log("Skipped opponent!"); render(); closeCheats(); }
+    function cheatHoldOn() { myHand.push({shape:"Circle", num:1}); render(); closeCheats(); }
+    function cheatPeekDeck() { if(deck.length>0) alert(`Next card: ${deck[deck.length-1].num} ${deck[deck.length-1].shape}`); closeCheats(); }
+    function cheatWipeOpp() { oppHand = []; checkWin(); closeCheats(); }
+    function cheatInfinite() { myTurn = true; log("Infinite turns enabled!"); closeCheats(); }
+
+    initGame();
   </script>
 </body>
 </html>
