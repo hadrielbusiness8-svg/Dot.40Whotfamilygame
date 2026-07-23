@@ -52,6 +52,7 @@
       border-radius: 20px;
       font-size: 13px;
       font-weight: 600;
+      transition: all 0.3s;
     }
 
     /* MODES & CHEATS CONTROL BAR */
@@ -177,6 +178,7 @@
       align-items: center;
       margin: 0 auto;
       padding: 10px;
+      min-height: 140px;
     }
 
     .rack .card {
@@ -279,7 +281,7 @@
       overflow-y: auto;
     }
 
-    /* CHEATS MODAL (SECRET TERMINAL) */
+    /* CHEATS MODAL */
     .modal {
       display: none;
       position: fixed;
@@ -300,14 +302,12 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      box-shadow: 0 10px 25px rgba(220, 38, 38, 0.3);
     }
 
     .modal-box h3 {
       color: #ef4444;
       text-align: center;
       font-size: 16px;
-      letter-spacing: 1px;
     }
 
     .cheat-input {
@@ -357,7 +357,6 @@
     <div class="mp-lobby" id="mp-lobby">
       <h3>Join Online Room</h3>
       <input type="text" id="mp-name" placeholder="Enter Your Name">
-      <!-- DEFAULT ROOM VALUE IS SET TO 1 -->
       <input type="text" id="mp-room" value="1" placeholder="Enter Room Number">
       <button class="nav-btn" style="width: 100%; padding: 12px; font-size: 14px;" onclick="joinRoom()">Join Room</button>
     </div>
@@ -405,7 +404,7 @@
 
   </div>
 
-  <!-- CHEATS MODAL (SECRET TERMINAL) -->
+  <!-- CHEATS MODAL -->
   <div class="modal" id="cheat-modal">
     <div class="modal-box">
       <h3>🔒 SECRET CHEAT TERMINAL</h3>
@@ -428,6 +427,12 @@
     let pTurn = true;
     let peekCPU = false;
 
+    // Multiplayer Variables
+    let peer = null;
+    let conn = null;
+    let isHost = false;
+    let myPlayerName = "Player 1";
+
     function buildDeck() {
       deck = [];
       shapes.forEach(s => {
@@ -448,6 +453,7 @@
     }
 
     function changeMode(m) {
+      if(peer) peer.destroy(); // Disconnect MP if leaving
       gameMode = m;
       document.getElementById('mode-sp').classList.toggle('active', m === 'sp');
       document.getElementById('mode-mp').classList.toggle('active', m === 'mp');
@@ -456,7 +462,6 @@
       document.getElementById('mp-lobby').style.display = (m === 'mp') ? 'flex' : 'none';
 
       if (m === 'sp') {
-        document.getElementById('turn-indicator').innerText = "Your Turn";
         document.getElementById('player-label').innerText = "Player 1";
         document.getElementById('opp-label').innerText = "Computer Pro";
         document.getElementById('opp-icon').innerText = "🤖";
@@ -471,30 +476,133 @@
       }
     }
 
+    /* ==== THE REAL MULTIPLAYER NETWORK LOGIC ==== */
     function joinRoom() {
-      const name = document.getElementById('mp-name').value || "Player 1";
+      myPlayerName = document.getElementById('mp-name').value || "Player";
       const roomNum = document.getElementById('mp-room').value || "1";
+      const hostId = `dot40-whot-room-${roomNum}`; // Secret global room ID
 
       document.getElementById('mp-lobby').style.display = 'none';
-      
-      document.getElementById('player-label').innerText = name;
-      document.getElementById('opp-label').innerText = "Opponent";
+      document.getElementById('player-label').innerText = myPlayerName;
       document.getElementById('opp-icon').innerText = "🌐";
-      document.getElementById('turn-indicator').innerText = "Waiting for an opponent to join...";
-      
-      writeLog(`${name} joined Room ${roomNum}. Waiting for Player 2...`);
+      setTurnPill("Connecting to Network...", "#eab308");
+
+      // 1. We get a random connection first
+      peer = new Peer();
+
+      peer.on('open', (myId) => {
+        // 2. Try to connect to the Host ID
+        conn = peer.connect(hostId, { reliable: true });
+
+        conn.on('open', () => {
+          // WE ARE GUEST (Player 2)
+          isHost = false;
+          writeLog("Connected to Room " + roomNum);
+          setupNetworkTriggers();
+          conn.send({ type: 'join', name: myPlayerName });
+        });
+
+        // 3. If connection fails, the room doesn't exist, so WE become the Host
+        peer.on('error', (err) => {
+          if (err.type === 'peer-unavailable') {
+            peer.destroy();
+            peer = new Peer(hostId); // Recreate ourselves as the Host ID
+
+            peer.on('open', () => {
+              isHost = true;
+              setTurnPill("Waiting for opponent to join...", "#3b82f6");
+              writeLog(`Room ${roomNum} created. Waiting...`);
+            });
+
+            peer.on('connection', (connection) => {
+              conn = connection; // Player 2 has joined us!
+              setupNetworkTriggers();
+            });
+          }
+        });
+      });
+    }
+
+    function setupNetworkTriggers() {
+      conn.on('data', (data) => {
+        if (data.type === 'join') {
+          document.getElementById('opp-label').innerText = data.name;
+          writeLog(`${data.name} joined the game!`);
+          
+          if (isHost) {
+            conn.send({ type: 'join', name: myPlayerName });
+            startMultiplayerGame(); // Host deals the cards
+          }
+        } 
+        else if (data.type === 'state') {
+          // Guest receives the initial deck and hands from Host
+          deck = data.deck;
+          topCard = data.topCard;
+          pHand = isHost ? data.p1Hand : data.p2Hand;
+          cpuHand = isHost ? data.p2Hand : data.p1Hand;
+          pTurn = isHost ? data.p1Turn : !data.p1Turn;
+          writeLog("Match started!");
+          updateUI();
+        } 
+        else if (data.type === 'play') {
+          topCard = data.card;
+          cpuHand.pop(); // Remove 1 card visually
+          writeLog(`Opponent played ${data.card.num} ${data.card.shape}`);
+          
+          if (data.holdOn) {
+            writeLog("Opponent played Hold On!");
+            pTurn = false; // We are still skipped
+          } else {
+            pTurn = true;
+          }
+          updateUI();
+        } 
+        else if (data.type === 'draw') {
+          deck.pop();
+          cpuHand.push({ shape: 'Hidden', num: 0 }); // Add dummy card visually
+          writeLog("Opponent drew a card.");
+          pTurn = true;
+          updateUI();
+        }
+        else if (data.type === 'win') {
+          alert("Opponent Won!");
+          changeMode('sp');
+        }
+      });
+    }
+
+    function startMultiplayerGame() {
+      buildDeck();
+      let p1Hand = deck.splice(0, 5);
+      let p2Hand = deck.splice(0, 5);
+      topCard = deck.pop();
+      let p1Turn = true;
+
+      // Sync the exact state to both players
+      conn.send({
+        type: 'state', deck: deck, topCard: topCard,
+        p1Hand: p1Hand, p2Hand: p2Hand, p1Turn: p1Turn
+      });
+
+      pHand = p1Hand;
+      cpuHand = p2Hand;
+      pTurn = p1Turn;
+      updateUI();
+    }
+    /* ============================================ */
+
+    function setTurnPill(text, color = "#34d399") {
+      const pill = document.getElementById('turn-indicator');
+      pill.innerText = text;
+      pill.style.borderColor = color;
     }
 
     function updateUI() {
-      if(gameMode !== 'mp' || pHand.length > 0) {
-        document.getElementById('turn-indicator').innerText = pTurn ? "Your Turn" : "Opponent Turn";
+      if (gameMode !== 'mp' || pHand.length > 0) {
+        setTurnPill(pTurn ? "Your Turn" : "Opponent Turn", pTurn ? "#34d399" : "#ef4444");
       }
       
-      if(topCard) {
-        document.getElementById('played-card-slot').innerHTML = renderCardHTML(topCard);
-      } else {
-        document.getElementById('played-card-slot').innerHTML = '';
-      }
+      document.getElementById('played-card-slot').innerHTML = renderCardHTML(topCard);
 
       const pRack = document.getElementById('player-rack');
       pRack.innerHTML = '';
@@ -510,7 +618,7 @@
       cpuRack.innerHTML = '';
       cpuHand.forEach(c => {
         const div = document.createElement('div');
-        if (peekCPU) {
+        if (peekCPU && c.shape !== 'Hidden') {
           div.innerHTML = renderCardHTML(c);
         } else {
           div.className = "card back";
@@ -529,26 +637,34 @@
       return `
         <div class="card face ${isWhot ? 'whot-20' : ''}">
           <div class="num-top">${c.num}</div>
-          <div class="symbol-center">${symbols[c.shape]}</div>
+          <div class="symbol-center">${symbols[c.shape] || ''}</div>
           <div class="num-bottom">${c.num}</div>
         </div>
       `;
     }
 
     function playCard(idx) {
-      if (!pTurn || gameMode === 'mp') return writeLog("Wait for your turn!");
+      if (!pTurn) return writeLog("Wait for your turn!");
       const c = pHand[idx];
+      
       if (c.num === 20 || c.shape === topCard.shape || c.num === topCard.num) {
         pHand.splice(idx, 1);
         topCard = c;
         writeLog(`You played ${c.num} ${c.shape}`);
         
-        if (checkEnd()) return;
+        if (checkEnd()) {
+          if (gameMode === 'mp') conn.send({ type: 'win' });
+          return;
+        }
 
-        if (c.num === 1) {
-          writeLog("Hold On! Play again.");
-        } else {
-          pTurn = false;
+        const isHoldOn = c.num === 1;
+        if (isHoldOn) writeLog("Hold On! Play again.");
+        else pTurn = false;
+
+        // Send move to opponent if playing online
+        if (gameMode === 'mp') {
+          conn.send({ type: 'play', card: c, holdOn: isHoldOn });
+        } else if (!isHoldOn) {
           setTimeout(cpuTurn, 1000);
         }
         updateUI();
@@ -558,16 +674,21 @@
     }
 
     function playerDraw() {
-      if (!pTurn || deck.length === 0 || gameMode === 'mp') return;
+      if (!pTurn || deck.length === 0) return;
       pHand.push(deck.pop());
       writeLog("You drew a card.");
       pTurn = false;
+
+      if (gameMode === 'mp') {
+        conn.send({ type: 'draw' });
+      } else {
+        setTimeout(cpuTurn, 1000);
+      }
       updateUI();
-      setTimeout(cpuTurn, 1000);
     }
 
     function cpuTurn() {
-      if (cpuHand.length === 0) return;
+      if (cpuHand.length === 0 || gameMode === 'mp') return;
       let matchIdx = cpuHand.findIndex(c => c.num === 20 || c.shape === topCard.shape || c.num === topCard.num);
 
       if (matchIdx !== -1) {
@@ -614,7 +735,6 @@
       }
     }
 
-    /* SECRET CHEATS SYSTEM */
     function submitCheat() {
       const code = document.getElementById('cheat-code-input').value.trim().toUpperCase();
       const msg = document.getElementById('cheat-msg');
