@@ -3,577 +3,215 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dot.40 WHOT - Hadriel & Ajayi</title>
-  <!-- PeerJS for WebRTC Online Multiplayer -->
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <title>PlayWhot Multiplayer</title>
+  <script src="/socket.io/socket.io.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
+    :root {
+      --felt-green: #0d5c2e;
+      --felt-dark: #073a1d;
+      --card-gold: #f59e0b;
+      --card-bg: #fffbf0;
     }
 
-    body {
-      background-color: #121212;
-      color: #ffffff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 10px;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; user-select: none; }
+    body { background: radial-gradient(circle, var(--felt-green) 40%, var(--felt-dark) 100%); height: 100vh; display: flex; flex-direction: column; color: white; overflow: hidden; }
 
-    .header-bar {
-      text-align: center;
-      margin-bottom: 10px;
-    }
+    .app-bar { height: 50px; background: rgba(0,0,0,0.4); display: flex; justify-content: space-between; align-items: center; padding: 0 1.5rem; }
+    .brand { font-size: 1.2rem; font-weight: 900; color: #fbbf24; }
+    .status-badge { background: rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; }
 
-    .header-bar h1 {
-      color: #00e676;
-      font-size: 26px;
-      margin-bottom: 2px;
-    }
+    .lobby { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 200; }
+    .lobby-box { background: #1e293b; padding: 2rem; border-radius: 16px; text-align: center; max-width: 350px; width: 90%; }
+    .lobby-box input { width: 100%; padding: 10px; margin: 8px 0; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white; }
+    .lobby-box button { width: 100%; padding: 10px; background: #f59e0b; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
 
-    .header-bar p {
-      font-size: 12px;
-      color: #b0bec5;
-    }
+    .table-container { flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 1rem 2rem; }
+    .player-profile { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); padding: 6px 14px; border-radius: 20px; width: fit-content; }
 
-    .mode-bar {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
+    .center-arena { display: flex; justify-content: center; align-items: center; gap: 2rem; margin: auto 0; }
+    .card { width: 80px; height: 120px; background: var(--card-bg); border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between; padding: 6px; color: #1e293b; position: relative; cursor: pointer; border: 2px solid #cbd5e1; box-shadow: 0 8px 16px rgba(0,0,0,0.4); }
+    .card.back { background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-color: #60a5fa; }
+    .card.whot-special { background: linear-gradient(135deg, #fef08a, #facc15); border-color: #d97706; }
+    .card-num { font-weight: 900; font-size: 1rem; }
+    .card-symbol { font-size: 1.8rem; text-align: center; }
 
-    .mode-btn {
-      background: #263238;
-      color: #fff;
-      border: 1px solid #455a64;
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 11px;
-      font-weight: bold;
-    }
+    .hand { display: flex; justify-content: center; min-height: 130px; }
+    .player-hand-container .card { margin: 0 -12px; transition: transform 0.2s; }
+    .player-hand-container .card:hover { transform: translateY(-10px); z-index: 10; }
+    .computer-hand-container .card { margin: 0 -20px; pointer-events: none; }
 
-    .mode-btn.active {
-      background: #00e676;
-      color: #000;
-      border-color: #00e676;
-    }
-
-    /* MULTIPLAYER LOBBY PANEL */
-    .multiplayer-panel {
-      width: 100%;
-      max-width: 500px;
-      background: #1e1e1e;
-      border: 1px solid #00e676;
-      border-radius: 8px;
-      padding: 10px;
-      margin-bottom: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      font-size: 12px;
-    }
-
-    .mp-inputs {
-      display: flex;
-      gap: 6px;
-    }
-
-    .mp-inputs input {
-      flex: 1;
-      padding: 6px;
-      border-radius: 4px;
-      border: 1px solid #444;
-      background: #121212;
-      color: #fff;
-      font-size: 12px;
-    }
-
-    .game-board {
-      width: 100%;
-      max-width: 500px;
-      background: #1e1e1e;
-      border: 2px solid #333;
-      border-radius: 12px;
-      padding: 15px;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-
-    .hand-label {
-      font-size: 12px;
-      color: #00e676;
-      font-weight: bold;
-    }
-
-    .card-row {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding: 5px;
-      min-height: 90px;
-      align-items: center;
-    }
-
-    .center-table {
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      background: #2a2a2a;
-      padding: 12px;
-      border-radius: 8px;
-    }
-
-    .card {
-      width: 55px;
-      height: 80px;
-      background: #ffffff;
-      color: #000000;
-      border-radius: 6px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 5px;
-      font-weight: bold;
-      font-size: 12px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-
-    .card.back {
-      background: #00e676;
-      color: #000000;
-      justify-content: center;
-      align-items: center;
-      font-size: 10px;
-      font-weight: bold;
-    }
-
-    .controls-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-      width: 100%;
-      max-width: 500px;
-    }
-
-    .action-btn {
-      flex: 1;
-      padding: 10px;
-      background: #00e676;
-      color: #000;
-      border: none;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .cheat-trigger {
-      background: #ff1744;
-      color: white;
-    }
-
-    .log-area {
-      width: 100%;
-      max-width: 500px;
-      background: #1e1e1e;
-      border: 1px solid #333;
-      border-radius: 6px;
-      height: 70px;
-      margin-top: 10px;
-      padding: 8px;
-      font-size: 11px;
-      color: #00e676;
-      overflow-y: auto;
-    }
-
-    /* MODAL */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.85);
-      justify-content: center;
-      align-items: center;
-      z-index: 100;
-    }
-
-    .modal-box {
-      background: #1e1e1e;
-      border: 2px solid #ff1744;
-      padding: 15px;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 400px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .cheat-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-    }
-
-    .cheat-btn {
-      background: #ff1744;
-      color: white;
-      border: none;
-      padding: 8px;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: bold;
-      cursor: pointer;
-    }
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 100; }
+    .modal-card { background: #1e293b; padding: 1.5rem; border-radius: 16px; text-align: center; }
+    .shape-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 1rem; }
+    .shape-btn { background: #334155; border: 1px solid #475569; color: white; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 1.2rem; }
   </style>
 </head>
 <body>
 
-  <div class="header-bar">
-    <h1>Dot.40 WHOT</h1>
-    <p>By Hadriel & Ajayi</p>
-  </div>
-
-  <div class="mode-bar">
-    <button class="mode-btn active" id="btn-single" onclick="switchMode('single')">Single Player</button>
-    <button class="mode-btn" id="btn-multi" onclick="switchMode('multiplayer')">Online Multiplayer</button>
-    <button class="mode-btn" id="btn-practice" onclick="switchMode('practice')">Practice Mode</button>
-  </div>
-
-  <!-- MULTIPLAYER CONTROLS PANEL -->
-  <div class="multiplayer-panel" id="mp-panel" style="display: none;">
-    <div>Your Peer ID: <b id="my-peer-id" style="color: #00e676;">Connecting...</b></div>
-    <div class="mp-inputs">
-      <input type="text" id="join-peer-id" placeholder="Enter Friend's Peer ID">
-      <button class="action-btn" style="padding: 6px;" onclick="connectToPeer()">Join Room</button>
+  <div class="lobby" id="lobby">
+    <div class="lobby-box">
+      <h2 style="color: #fbbf24; margin-bottom: 1rem;">Join Whot Room</h2>
+      <input type="text" id="player-name-input" placeholder="Your Name" value="Player 1">
+      <input type="text" id="room-id-input" placeholder="Room Code (e.g., 1001)" value="1001">
+      <button onclick="joinGame()">Join Room</button>
     </div>
-    <div id="mp-status" style="color: #aaa; font-size: 11px;">Status: Offline</div>
   </div>
 
-  <div class="game-board">
-    <div class="hand-label" id="opp-label">OPPONENT HAND (<span id="cpu-count">5</span>)</div>
-    <div class="card-row" id="cpu-row"></div>
+  <div class="app-bar">
+    <div class="brand">PLAYWHOT ONLINE</div>
+    <div class="status-badge" id="status-text">Connecting...</div>
+  </div>
 
-    <div class="center-table">
-      <div>
-        <div style="font-size:10px; color:#aaa; text-align:center; margin-bottom:2px;">MARKET</div>
-        <div class="card back" onclick="playerDraw()">
-          <div>DOT.40</div>
-          <div id="deck-size" style="font-size:9px;">30</div>
-        </div>
-      </div>
-
-      <div>
-        <div style="font-size:10px; color:#aaa; text-align:center; margin-bottom:2px;">PLAY PILE</div>
-        <div id="played-card"></div>
-      </div>
+  <div class="table-container">
+    <div class="player-profile">
+      <div>🤖 <span id="opp-name">Opponent</span> (<span id="opp-count">0</span>)</div>
     </div>
 
-    <div class="hand-label">YOUR HAND</div>
-    <div class="card-row" id="player-row"></div>
+    <div class="hand computer-hand-container" id="opp-hand"></div>
+
+    <div class="center-arena">
+      <div class="card back" id="draw-deck"></div>
+      <div id="top-card-container"></div>
+    </div>
+
+    <div class="hand player-hand-container" id="my-hand"></div>
+
+    <div class="player-profile" style="align-self: flex-end;">
+      <div>👤 <span id="my-name">You</span></div>
+    </div>
   </div>
 
-  <div class="controls-row">
-    <button class="action-btn" onclick="playerDraw()">Draw Card</button>
-    <button class="action-btn cheat-trigger" onclick="toggleCheatMenu(true)">10 Cheats Menu</button>
-  </div>
-
-  <div class="log-area" id="log-box">Welcome to Dot.40 Whot!</div>
-
-  <!-- CHEATS MODAL -->
-  <div class="modal-overlay" id="cheat-modal">
-    <div class="modal-box">
-      <h3 style="color:#ff1744; text-align:center; font-size:14px;">10 Effective Cheats</h3>
-      <div class="cheat-grid">
-        <button class="cheat-btn" onclick="cPeek()">1. Peek Opponent Hand</button>
-        <button class="cheat-btn" onclick="cAddWhot()">2. Give Whot (20)</button>
-        <button class="cheat-btn" onclick="cCPUDraw5()">3. Force Opponent Draw 5</button>
-        <button class="cheat-btn" onclick="cInstantWin()">4. Instant Win</button>
-        <button class="cheat-btn" onclick="cSwap()">5. Swap Hands</button>
-        <button class="cheat-btn" onclick="cSkipCPU()">6. Skip Opponent Turn</button>
-        <button class="cheat-btn" onclick="cHoldOnSpam()">7. Add Hold-On Cards</button>
-        <button class="cheat-btn" onclick="cPeekDeck()">8. Peek Market Top</button>
-        <button class="cheat-btn" onclick="cClearCPU()">9. Wipe Opponent Hand</button>
-        <button class="cheat-btn" onclick="cInfiniteTurns()">10. Infinite Turns</button>
-      </div>
-      <button class="action-btn" style="margin-top:5px; padding:6px;" onclick="toggleCheatMenu(false)">Close</button>
+  <div class="modal" id="shape-modal">
+    <div class="modal-card">
+      <h3 style="color: #fbbf24;">WHOT! Choose Shape</h3>
+      <div class="shape-grid" id="shape-buttons"></div>
     </div>
   </div>
 
   <script>
-    const shapes = ["Circle", "Triangle", "Cross", "Square", "Star"];
-    const symbols = { "Circle": "●", "Triangle": "▲", "Cross": "✖", "Square": "■", "Star": "★", "Whot": "W" };
+    const socket = io();
+    const SHAPES = ["Circle", "Square", "Triangle", "Cross", "Star"];
+    const SYMBOLS = { "Circle": "◯", "Square": "▢", "Triangle": "△", "Cross": "┼", "Star": "★", "Whot": "W" };
 
-    let deck = [];
-    let pHand = [];
-    let cpuHand = [];
-    let topCard = null;
-    let mode = "single"; 
-    let pTurn = true;
-    let cpuVisible = false;
+    let roomId = "";
+    let myHand = [];
+    let isMyTurn = false;
+    let pendingCardIndex = null;
 
-    // Online Multiplayer PeerJS state
-    let peer = null;
-    let conn = null;
-    let isHost = false;
+    function joinGame() {
+      const name = document.getElementById('player-name-input').value.trim();
+      roomId = document.getElementById('room-id-input').value.trim();
 
-    function createDeck() {
-      deck = [];
-      shapes.forEach(s => {
-        [1, 2, 3, 4, 5, 7, 8, 10, 11, 12, 13, 14].forEach(n => deck.push({ shape: s, num: n }));
+      if (!roomId) return alert("Enter Room Code");
+
+      document.getElementById('my-name').innerText = name;
+      socket.emit('joinRoom', { roomId, playerName: name });
+      document.getElementById('lobby').style.display = 'none';
+    }
+
+    socket.on('waitingForOpponent', () => {
+      document.getElementById('status-text').innerText = "Waiting for an opponent to join...";
+    });
+
+    socket.on('gameState', (data) => {
+      myHand = data.myHand;
+      isMyTurn = data.isMyTurn;
+
+      document.getElementById('status-text').innerText = isMyTurn ? "Your Turn" : "Opponent's Turn";
+      document.getElementById('opp-name').innerText = data.opponentName;
+      document.getElementById('opp-count').innerText = data.opponentCardCount;
+
+      render(data.topCard, data.opponentCardCount, data.currentDemand);
+    });
+
+    socket.on('gameOver', ({ winner }) => {
+      alert(`Game Over! Winner: ${winner}`);
+      location.reload();
+    });
+
+    socket.on('playerDisconnected', () => {
+      alert("Opponent disconnected!");
+      location.reload();
+    });
+
+    function render(topCard, oppCount, demand) {
+      // Opponent hand
+      const oppContainer = document.getElementById('opp-hand');
+      oppContainer.innerHTML = '';
+      for (let i = 0; i < oppCount; i++) {
+        const c = document.createElement('div');
+        c.className = 'card back';
+        oppContainer.appendChild(c);
+      }
+
+      // My hand
+      const myContainer = document.getElementById('my-hand');
+      myContainer.innerHTML = '';
+      myHand.forEach((card, idx) => {
+        const el = createCardUI(card);
+        el.onclick = () => playCard(idx);
+        myContainer.appendChild(el);
       });
-      for (let i = 0; i < 4; i++) deck.push({ shape: "Whot", num: 20 });
-      deck.sort(() => Math.random() - 0.5);
-    }
 
-    function initGame() {
-      createDeck();
-      pHand = deck.splice(0, 5);
-      cpuHand = deck.splice(0, 5);
-      topCard = deck.pop();
-      pTurn = true;
-      writeLog("New game started!");
-      updateUI();
-    }
-
-    function switchMode(newMode) {
-      mode = newMode;
-      document.getElementById('btn-single').classList.toggle('active', mode === 'single');
-      document.getElementById('btn-multi').classList.toggle('active', mode === 'multiplayer');
-      document.getElementById('btn-practice').classList.toggle('active', mode === 'practice');
-
-      document.getElementById('mp-panel').style.display = (mode === 'multiplayer') ? 'flex' : 'none';
-      document.getElementById('opp-label').innerText = (mode === 'multiplayer') ? "PLAYER 2 HAND" : "CPU HAND";
-
-      if (mode === 'multiplayer') {
-        initPeer();
-        writeLog("Multiplayer Mode: Share your Peer ID or Join a friend!");
-      } else if (mode === 'practice') {
-        writeLog("Practice Mode ON: Watch logs for helpful tips.");
-        initGame();
-      } else {
-        writeLog("Single Player Mode active.");
-        initGame();
+      // Top card
+      const topContainer = document.getElementById('top-card-container');
+      topContainer.innerHTML = '';
+      if (topCard) {
+        topContainer.appendChild(createCardUI(topCard));
       }
     }
 
-    /* ONLINE MULTIPLAYER PEERJS SETUP */
-    function initPeer() {
-      if (peer) return;
-      peer = new Peer();
+    function createCardUI(card) {
+      const el = document.createElement('div');
+      el.className = 'card';
+      if (card.shape === "Whot") el.classList.add('whot-special');
 
-      peer.on('open', id => {
-        document.getElementById('my-peer-id').innerText = id;
-        document.getElementById('mp-status').innerText = "Status: Ready to host or join";
-      });
+      const sym = SYMBOLS[card.shape];
+      const val = card.shape === "Whot" ? "20" : card.number;
 
-      peer.on('connection', connection => {
-        conn = connection;
-        isHost = true;
-        setupConn();
-        document.getElementById('mp-status').innerText = "Connected to Player 2 (Host)";
-        initGame();
-        sendGameState();
-      });
-    }
-
-    function connectToPeer() {
-      const peerId = document.getElementById('join-peer-id').value.trim();
-      if (!peerId) return alert("Please enter a valid Peer ID!");
-      
-      initPeer();
-      conn = peer.connect(peerId);
-      isHost = false;
-      setupConn();
-      document.getElementById('mp-status').innerText = "Connecting to Host...";
-    }
-
-    function setupConn() {
-      conn.on('open', () => {
-        document.getElementById('mp-status').innerText = "Connected! Match started.";
-        writeLog("Connected to multiplayer room!");
-      });
-
-      conn.on('data', data => {
-        // Sync multiplayer game state
-        if (data.type === 'SYNC') {
-          deck = data.deck;
-          topCard = data.topCard;
-          pHand = isHost ? data.p1Hand : data.p2Hand;
-          cpuHand = isHost ? data.p2Hand : data.p1Hand;
-          pTurn = isHost ? data.turn === 'p1' : data.turn === 'p2';
-          updateUI();
-        }
-      });
-    }
-
-    function sendGameState() {
-      if (!conn || !isHost) return;
-      conn.send({
-        type: 'SYNC',
-        deck: deck,
-        topCard: topCard,
-        p1Hand: pHand,
-        p2Hand: cpuHand,
-        turn: pTurn ? 'p1' : 'p2'
-      });
-    }
-
-    function updateUI() {
-      document.getElementById('deck-size').innerText = deck.length;
-      document.getElementById('played-card').innerHTML = cardHTML(topCard);
-
-      // Render Player
-      const pRow = document.getElementById('player-row');
-      pRow.innerHTML = '';
-      pHand.forEach((c, idx) => {
-        const div = document.createElement('div');
-        div.innerHTML = cardHTML(c);
-        div.onclick = () => playCard(idx);
-        pRow.appendChild(div);
-      });
-
-      // Render CPU / Opponent
-      const cpuRow = document.getElementById('cpu-row');
-      cpuRow.innerHTML = '';
-      document.getElementById('cpu-count').innerText = cpuHand.length;
-      cpuHand.forEach(c => {
-        const div = document.createElement('div');
-        div.innerHTML = cpuVisible ? cardHTML(c) : `<div class="card back"><div>DOT.40</div></div>`;
-        cpuRow.appendChild(div);
-      });
-
-      if (mode === 'practice' && pTurn) giveHint();
-    }
-
-    function cardHTML(c) {
-      return `
-        <div class="card">
-          <div>${c.num}</div>
-          <div style="text-align:center; font-size:16px;">${symbols[c.shape]}</div>
-          <div style="font-size:8px; text-align:right;">${c.shape}</div>
-        </div>
+      el.innerHTML = `
+        <div class="card-num">${val}</div>
+        <div class="card-symbol">${sym}</div>
+        <div class="card-num" style="text-align:right">${val}</div>
       `;
+      return el;
     }
 
-    function playCard(idx) {
-      if (!pTurn) return writeLog("Not your turn!");
-      const c = pHand[idx];
-      if (c.num === 20 || c.shape === topCard.shape || c.num === topCard.num) {
-        pHand.splice(idx, 1);
-        topCard = c;
-        writeLog(`You played ${c.num} ${c.shape}`);
-        
-        if (checkWin()) return;
+    document.getElementById('draw-deck').onclick = () => {
+      if (!isMyTurn) return;
+      socket.emit('drawCard', { roomId });
+    };
 
-        if (c.num === 1) {
-          writeLog("Hold On! Play again.");
-        } else {
-          pTurn = false;
-          if (mode === 'single' || mode === 'practice') {
-            setTimeout(cpuAction, 1000);
-          } else if (mode === 'multiplayer') {
-            sendGameState();
-          }
-        }
-        updateUI();
+    function playCard(index) {
+      if (!isMyTurn) return;
+      const card = myHand[index];
+
+      if (card.shape === "Whot") {
+        pendingCardIndex = index;
+        openShapeModal();
       } else {
-        writeLog("Can't play that card!");
+        socket.emit('playCard', { roomId, cardIndex: index });
       }
     }
 
-    function playerDraw() {
-      if (!pTurn || deck.length === 0) return;
-      pHand.push(deck.pop());
-      writeLog("You drew a card.");
-      pTurn = false;
-      updateUI();
+    function openShapeModal() {
+      const modal = document.getElementById('shape-modal');
+      const grid = document.getElementById('shape-buttons');
+      grid.innerHTML = '';
 
-      if (mode === 'single' || mode === 'practice') {
-        setTimeout(cpuAction, 1000);
-      } else if (mode === 'multiplayer') {
-        sendGameState();
-      }
+      SHAPES.forEach(s => {
+        const btn = document.createElement('button');
+        btn.className = 'shape-btn';
+        btn.innerText = `${SYMBOLS[s]} ${s}`;
+        btn.onclick = () => {
+          modal.style.display = 'none';
+          socket.emit('playCard', { roomId, cardIndex: pendingCardIndex, requestedShape: s });
+        };
+        grid.appendChild(btn);
+      });
+
+      modal.style.display = 'flex';
     }
-
-    function cpuAction() {
-      if (cpuHand.length === 0) return;
-      let validIdx = cpuHand.findIndex(c => c.num === 20 || c.shape === topCard.shape || c.num === topCard.num);
-
-      if (validIdx !== -1) {
-        let c = cpuHand.splice(validIdx, 1)[0];
-        topCard = c;
-        writeLog(`CPU played ${c.num} ${c.shape}`);
-        if (checkWin()) return;
-        if (c.num === 1) {
-          writeLog("CPU played Hold On and goes again!");
-          setTimeout(cpuAction, 1000);
-          return;
-        }
-      } else if (deck.length > 0) {
-        cpuHand.push(deck.pop());
-        writeLog("CPU drew a card.");
-      }
-
-      pTurn = true;
-      updateUI();
-    }
-
-    function giveHint() {
-      let matches = pHand.filter(c => c.num === 20 || c.shape === topCard.shape || c.num === topCard.num);
-      if (matches.length > 0) {
-        writeLog(`[Practice Hint] You have ${matches.length} playable card(s).`);
-      } else {
-        writeLog(`[Practice Hint] No match available. Tap 'Draw Card'.`);
-      }
-    }
-
-    function checkWin() {
-      if (pHand.length === 0) {
-        alert("You Won Dot.40 Whot!");
-        initGame();
-        return true;
-      }
-      if (cpuHand.length === 0) {
-        alert("Opponent Won!");
-        initGame();
-        return true;
-      }
-      return false;
-    }
-
-    function writeLog(txt) {
-      const box = document.getElementById('log-box');
-      box.innerText = txt + "\n" + box.innerText;
-    }
-
-    function toggleCheatMenu(show) {
-      document.getElementById('cheat-modal').style.display = show ? 'flex' : 'none';
-    }
-
-    /* 10 CHEATS */
-    function cPeek() { cpuVisible = !cpuVisible; updateUI(); toggleCheatMenu(false); }
-    function cAddWhot() { pHand.push({ shape: "Whot", num: 20 }); updateUI(); toggleCheatMenu(false); }
-    function cCPUDraw5() { if(deck.length>=5) cpuHand.push(...deck.splice(0,5)); updateUI(); toggleCheatMenu(false); }
-    function cInstantWin() { pHand = []; checkWin(); toggleCheatMenu(false); }
-    function cSwap() { let t = [...pHand]; pHand = [...cpuHand]; cpuHand = t; updateUI(); toggleCheatMenu(false); }
-    function cSkipCPU() { pTurn = true; writeLog("Skipped turn!"); updateUI(); toggleCheatMenu(false); }
-    function cHoldOnSpam() { pHand.push({ shape: "Circle", num: 1 }); updateUI(); toggleCheatMenu(false); }
-    function cPeekDeck() { if(deck.length>0) alert(`Next card is: ${deck[deck.length-1].num} ${deck[deck.length-1].shape}`); toggleCheatMenu(false); }
-    function cClearCPU() { cpuHand = []; checkWin(); toggleCheatMenu(false); }
-    function cInfiniteTurns() { pTurn = true; writeLog("Infinite turns mode enabled!"); toggleCheatMenu(false); }
-
-    initGame();
   </script>
 </body>
 </html>
