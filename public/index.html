@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dot.40 WHOT - Hadriel & Ajayi</title>
-  <!-- PeerJS for WebRTC Online Multiplayer -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     * {
@@ -15,7 +14,7 @@
     }
 
     body {
-      background: #0f4d2a; /* Exact rich felt green */
+      background: #0f4d2a;
       color: #ffffff;
       height: 100vh;
       display: flex;
@@ -35,7 +34,7 @@
     .brand-title {
       font-size: 20px;
       font-weight: 900;
-      color: #facc15; /* Golden Yellow */
+      color: #facc15;
       letter-spacing: 1px;
     }
 
@@ -96,7 +95,40 @@
       padding: 20px;
     }
 
-    /* BADGES (Matched exactly to screenshot) */
+    /* MULTIPLAYER LOBBY OVERLAY */
+    .mp-lobby {
+      display: none;
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #0b2214;
+      padding: 25px;
+      border-radius: 12px;
+      border: 2px solid #34d399;
+      z-index: 50;
+      flex-direction: column;
+      gap: 15px;
+      width: 320px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      text-align: center;
+    }
+
+    .mp-lobby h3 {
+      color: #facc15;
+      font-size: 16px;
+    }
+
+    .mp-lobby input {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #1e3a29;
+      background: #1e293b;
+      color: white;
+      font-size: 14px;
+      width: 100%;
+    }
+
+    /* BADGES */
     .badge {
       background: #0b2214;
       border-radius: 25px;
@@ -132,13 +164,13 @@
 
     .badge-sub {
       font-size: 11px;
-      color: #38bdf8; /* Light blue count text */
+      color: #38bdf8;
     }
 
     .badge-opp { align-self: flex-start; }
     .badge-self { align-self: flex-end; }
 
-    /* CARD RACKS (OVERLAPPING CARDS) */
+    /* CARD RACKS */
     .rack {
       display: flex;
       justify-content: center;
@@ -148,7 +180,7 @@
     }
 
     .rack .card {
-      margin-left: -25px; /* Creates fanning overlap */
+      margin-left: -25px;
       transition: transform 0.2s;
     }
 
@@ -161,7 +193,7 @@
       z-index: 10;
     }
 
-    /* CENTER AREA (MARKET & PLAYED STACK) */
+    /* CENTER AREA */
     .center-table {
       position: absolute;
       top: 48%;
@@ -181,7 +213,7 @@
       letter-spacing: 0.5px;
     }
 
-    /* CARD VISUALS MATCHING SCREENSHOT */
+    /* CARDS */
     .card {
       width: 80px;
       height: 120px;
@@ -192,7 +224,6 @@
       cursor: pointer;
     }
 
-    /* Blue Backs */
     .card.back {
       background: linear-gradient(135deg, #3b82f6, #1d4ed8);
       border: 2px solid #60a5fa;
@@ -209,7 +240,6 @@
       letter-spacing: 1px;
     }
 
-    /* White Face Cards */
     .card.face {
       background: #fcfcfc;
       color: #1e293b;
@@ -221,7 +251,7 @@
     }
 
     .card.whot-20 {
-      background: #facc15; /* Yellow Special Whot Card */
+      background: #facc15;
       border: 2px solid #eab308;
     }
 
@@ -234,7 +264,7 @@
       line-height: 1;
     }
 
-    /* CHEATS & LOG OVERLAY */
+    /* LOG OVERLAY */
     .log-pill {
       position: absolute;
       bottom: 80px;
@@ -249,6 +279,7 @@
       overflow-y: auto;
     }
 
+    /* CHEATS MODAL */
     .modal {
       display: none;
       position: fixed;
@@ -311,10 +342,18 @@
   <!-- GAME BOARD -->
   <div class="game-board">
 
+    <!-- MULTIPLAYER LOBBY -->
+    <div class="mp-lobby" id="mp-lobby">
+      <h3>Join Online Room</h3>
+      <input type="text" id="mp-name" placeholder="Enter Your Name">
+      <input type="text" id="mp-room" placeholder="Enter Room Number">
+      <button class="nav-btn" style="width: 100%; padding: 12px; font-size: 14px;" onclick="joinRoom()">Join Room</button>
+    </div>
+
     <!-- OPPONENT AREA -->
     <div>
       <div class="badge badge-opp">
-        <div class="badge-icon">🤖</div>
+        <div class="badge-icon" id="opp-icon">🤖</div>
         <div class="badge-info">
           <span class="badge-name" id="opp-label">Computer Pro</span>
           <span class="badge-sub" id="opp-count">5 cards remaining</span>
@@ -346,7 +385,7 @@
       <div class="badge badge-self">
         <div class="badge-icon" style="background: #eab308; color:#000;">👤</div>
         <div class="badge-info">
-          <span class="badge-name">Player 1</span>
+          <span class="badge-name" id="player-label">Player 1</span>
           <span class="badge-sub" id="player-count">5 cards remaining</span>
         </div>
       </div>
@@ -375,7 +414,6 @@
   </div>
 
   <script>
-    // Symbols matching standard line art
     const shapes = ["Circle", "Triangle", "Cross", "Square", "Star"];
     const symbols = { "Circle": "○", "Triangle": "△", "Cross": "+", "Square": "□", "Star": "☆", "Whot": "W" };
 
@@ -412,18 +450,62 @@
       document.getElementById('mode-mp').classList.toggle('active', m === 'mp');
       document.getElementById('mode-pr').classList.toggle('active', m === 'pr');
 
-      if (m === 'mp') {
-        let room = prompt("Enter Game Code / Room ID to host/join:", "dot40");
-        writeLog(`Multiplayer room set: ${room || 'default'}`);
+      // Show the Multiplayer UI Overlay if clicked
+      document.getElementById('mp-lobby').style.display = (m === 'mp') ? 'flex' : 'none';
+
+      if (m === 'sp') {
+        document.getElementById('turn-indicator').innerText = "Your Turn";
+        document.getElementById('player-label').innerText = "Player 1";
+        document.getElementById('opp-label').innerText = "Computer Pro";
+        document.getElementById('opp-icon').innerText = "🤖";
+        initGame();
+      } else if (m === 'pr') {
+        document.getElementById('turn-indicator').innerText = "Practice Mode";
+        initGame();
+      } else if (m === 'mp') {
+        document.getElementById('turn-indicator').innerText = "Enter Room Details...";
+        // Clear board visually while in lobby
+        pHand = []; cpuHand = []; topCard = null;
+        updateUI();
       }
-      initGame();
+    }
+
+    // MULTIPLAYER JOIN LOGIC
+    function joinRoom() {
+      const name = document.getElementById('mp-name').value || "Player 1";
+      const roomNum = document.getElementById('mp-room').value;
+      
+      if (!roomNum) {
+        alert("Please enter a room number to connect!");
+        return;
+      }
+
+      // Hide Lobby
+      document.getElementById('mp-lobby').style.display = 'none';
+      
+      // Setup Visual Waiting State
+      document.getElementById('player-label').innerText = name;
+      document.getElementById('opp-label').innerText = "Opponent";
+      document.getElementById('opp-icon').innerText = "🌐";
+      document.getElementById('turn-indicator').innerText = "Waiting for an opponent to join...";
+      
+      writeLog(`${name} joined Room ${roomNum}. Waiting for Player 2...`);
+
+      // Initialize peer connection in the background here.
+      // Game will start via peerJS once Player 2 joins this room number.
     }
 
     function updateUI() {
-      document.getElementById('turn-indicator').innerText = pTurn ? "Your Turn" : "Opponent Turn";
-      document.getElementById('played-card-slot').innerHTML = renderCardHTML(topCard);
+      if(gameMode !== 'mp' || pHand.length > 0) {
+        document.getElementById('turn-indicator').innerText = pTurn ? "Your Turn" : "Opponent Turn";
+      }
+      
+      if(topCard) {
+        document.getElementById('played-card-slot').innerHTML = renderCardHTML(topCard);
+      } else {
+        document.getElementById('played-card-slot').innerHTML = '';
+      }
 
-      // Player Rack
       const pRack = document.getElementById('player-rack');
       pRack.innerHTML = '';
       pHand.forEach((c, idx) => {
@@ -434,7 +516,6 @@
       });
       document.getElementById('player-count').innerText = `${pHand.length} cards remaining`;
 
-      // CPU Rack
       const cpuRack = document.getElementById('opp-rack');
       cpuRack.innerHTML = '';
       cpuHand.forEach(c => {
@@ -449,10 +530,11 @@
       });
       document.getElementById('opp-count').innerText = `${cpuHand.length} cards remaining`;
 
-      if (gameMode === 'pr' && pTurn) givePracticeHint();
+      if (gameMode === 'pr' && pTurn && pHand.length > 0) givePracticeHint();
     }
 
     function renderCardHTML(c) {
+      if(!c) return '';
       const isWhot = c.num === 20;
       return `
         <div class="card face ${isWhot ? 'whot-20' : ''}">
@@ -464,7 +546,7 @@
     }
 
     function playCard(idx) {
-      if (!pTurn) return writeLog("Wait for your turn!");
+      if (!pTurn || gameMode === 'mp') return writeLog("Wait for your turn!"); // Blocked until MP is fully connected
       const c = pHand[idx];
       if (c.num === 20 || c.shape === topCard.shape || c.num === topCard.num) {
         pHand.splice(idx, 1);
@@ -486,7 +568,7 @@
     }
 
     function playerDraw() {
-      if (!pTurn || deck.length === 0) return;
+      if (!pTurn || deck.length === 0 || gameMode === 'mp') return;
       pHand.push(deck.pop());
       writeLog("You drew a card.");
       pTurn = false;
