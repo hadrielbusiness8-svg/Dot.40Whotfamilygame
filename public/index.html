@@ -279,44 +279,55 @@
       overflow-y: auto;
     }
 
-    /* CHEATS MODAL */
+    /* CHEATS MODAL (SECRET TERMINAL) */
     .modal {
       display: none;
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.85);
       justify-content: center;
       align-items: center;
       z-index: 99;
     }
 
     .modal-box {
-      background: #1e293b;
-      padding: 18px;
+      background: #0f172a;
+      padding: 24px;
       border-radius: 12px;
-      border: 2px solid #ef4444;
+      border: 2px solid #dc2626;
       width: 90%;
-      max-width: 400px;
+      max-width: 360px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
+      box-shadow: 0 10px 25px rgba(220, 38, 38, 0.3);
     }
 
-    .cheat-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
+    .modal-box h3 {
+      color: #ef4444;
+      text-align: center;
+      font-size: 16px;
+      letter-spacing: 1px;
     }
 
-    .cheat-btn {
-      background: #ef4444;
-      color: white;
-      border: none;
-      padding: 8px;
-      border-radius: 6px;
-      font-size: 11px;
+    .cheat-input {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #dc2626;
+      background: #1e293b;
+      color: #f87171;
+      font-size: 14px;
       font-weight: bold;
-      cursor: pointer;
+      text-align: center;
+      text-transform: uppercase;
+      outline: none;
+    }
+
+    .cheat-msg {
+      font-size: 11px;
+      text-align: center;
+      min-height: 16px;
+      color: #94a3b8;
     }
   </style>
 </head>
@@ -336,7 +347,7 @@
     <button class="nav-btn active" id="mode-sp" onclick="changeMode('sp')">Single Player</button>
     <button class="nav-btn" id="mode-mp" onclick="changeMode('mp')">Online Multiplayer</button>
     <button class="nav-btn" id="mode-pr" onclick="changeMode('pr')">Practice Mode</button>
-    <button class="nav-btn btn-cheat" onclick="toggleCheats(true)">⚡ 10 Cheats</button>
+    <button class="nav-btn btn-cheat" onclick="toggleCheats(true)">⚡ Cheats</button>
   </div>
 
   <!-- GAME BOARD -->
@@ -346,7 +357,8 @@
     <div class="mp-lobby" id="mp-lobby">
       <h3>Join Online Room</h3>
       <input type="text" id="mp-name" placeholder="Enter Your Name">
-      <input type="text" id="mp-room" placeholder="Enter Room Number">
+      <!-- DEFAULT ROOM VALUE IS SET TO 1 -->
+      <input type="text" id="mp-room" value="1" placeholder="Enter Room Number">
       <button class="nav-btn" style="width: 100%; padding: 12px; font-size: 14px;" onclick="joinRoom()">Join Room</button>
     </div>
 
@@ -393,23 +405,14 @@
 
   </div>
 
-  <!-- CHEATS MODAL -->
+  <!-- CHEATS MODAL (SECRET TERMINAL) -->
   <div class="modal" id="cheat-modal">
     <div class="modal-box">
-      <h3 style="color:#ef4444; text-align:center;">⚡ 10 Effective Cheats</h3>
-      <div class="cheat-grid">
-        <button class="cheat-btn" onclick="cPeek()">1. Peek Opponent</button>
-        <button class="cheat-btn" onclick="cAddWhot()">2. Give Whot (20)</button>
-        <button class="cheat-btn" onclick="cDraw5()">3. Opponent Draw 5</button>
-        <button class="cheat-btn" onclick="cWin()">4. Instant Win</button>
-        <button class="cheat-btn" onclick="cSwap()">5. Swap Hands</button>
-        <button class="cheat-btn" onclick="cSkip()">6. Skip Opponent</button>
-        <button class="cheat-btn" onclick="cHoldOn()">7. Add Hold On</button>
-        <button class="cheat-btn" onclick="cPeekDeck()">8. Peek Market Top</button>
-        <button class="cheat-btn" onclick="cWipe()">9. Wipe Opponent</button>
-        <button class="cheat-btn" onclick="cInfinite()">10. Infinite Turns</button>
-      </div>
-      <button class="nav-btn" style="margin-top:5px;" onclick="toggleCheats(false)">Close</button>
+      <h3>🔒 SECRET CHEAT TERMINAL</h3>
+      <input type="text" class="cheat-input" id="cheat-code-input" placeholder="ENTER SECRET CODE..." onkeydown="if(event.key==='Enter') submitCheat()">
+      <div class="cheat-msg" id="cheat-msg">Type secret code and press Enter</div>
+      <button class="nav-btn btn-cheat" style="padding: 10px;" onclick="submitCheat()">Activate Cheat</button>
+      <button class="nav-btn" style="background: #334155; border-color: #475569;" onclick="toggleCheats(false)">Close</button>
     </div>
   </div>
 
@@ -450,7 +453,6 @@
       document.getElementById('mode-mp').classList.toggle('active', m === 'mp');
       document.getElementById('mode-pr').classList.toggle('active', m === 'pr');
 
-      // Show the Multiplayer UI Overlay if clicked
       document.getElementById('mp-lobby').style.display = (m === 'mp') ? 'flex' : 'none';
 
       if (m === 'sp') {
@@ -464,35 +466,23 @@
         initGame();
       } else if (m === 'mp') {
         document.getElementById('turn-indicator').innerText = "Enter Room Details...";
-        // Clear board visually while in lobby
         pHand = []; cpuHand = []; topCard = null;
         updateUI();
       }
     }
 
-    // MULTIPLAYER JOIN LOGIC
     function joinRoom() {
       const name = document.getElementById('mp-name').value || "Player 1";
-      const roomNum = document.getElementById('mp-room').value;
-      
-      if (!roomNum) {
-        alert("Please enter a room number to connect!");
-        return;
-      }
+      const roomNum = document.getElementById('mp-room').value || "1";
 
-      // Hide Lobby
       document.getElementById('mp-lobby').style.display = 'none';
       
-      // Setup Visual Waiting State
       document.getElementById('player-label').innerText = name;
       document.getElementById('opp-label').innerText = "Opponent";
       document.getElementById('opp-icon').innerText = "🌐";
       document.getElementById('turn-indicator').innerText = "Waiting for an opponent to join...";
       
       writeLog(`${name} joined Room ${roomNum}. Waiting for Player 2...`);
-
-      // Initialize peer connection in the background here.
-      // Game will start via peerJS once Player 2 joins this room number.
     }
 
     function updateUI() {
@@ -546,7 +536,7 @@
     }
 
     function playCard(idx) {
-      if (!pTurn || gameMode === 'mp') return writeLog("Wait for your turn!"); // Blocked until MP is fully connected
+      if (!pTurn || gameMode === 'mp') return writeLog("Wait for your turn!");
       const c = pHand[idx];
       if (c.num === 20 || c.shape === topCard.shape || c.num === topCard.num) {
         pHand.splice(idx, 1);
@@ -615,19 +605,44 @@
       b.innerText = t + "\n" + b.innerText;
     }
 
-    function toggleCheats(show) { document.getElementById('cheat-modal').style.display = show ? 'flex' : 'none'; }
+    function toggleCheats(show) { 
+      document.getElementById('cheat-modal').style.display = show ? 'flex' : 'none'; 
+      if(show) {
+        document.getElementById('cheat-code-input').value = '';
+        document.getElementById('cheat-msg').innerText = 'Type secret code and press Enter';
+        document.getElementById('cheat-msg').style.color = '#94a3b8';
+      }
+    }
 
-    /* CHEATS ACTIONS */
-    function cPeek() { peekCPU = !peekCPU; updateUI(); toggleCheats(false); }
-    function cAddWhot() { pHand.push({ shape: "Whot", num: 20 }); updateUI(); toggleCheats(false); }
-    function cDraw5() { if (deck.length >= 5) cpuHand.push(...deck.splice(0, 5)); updateUI(); toggleCheats(false); }
-    function cWin() { pHand = []; checkEnd(); toggleCheats(false); }
-    function cSwap() { let t = [...pHand]; pHand = [...cpuHand]; cpuHand = t; updateUI(); toggleCheats(false); }
-    function cSkip() { pTurn = true; writeLog("Skipped opponent!"); updateUI(); toggleCheats(false); }
-    function cHoldOn() { pHand.push({ shape: "Circle", num: 1 }); updateUI(); toggleCheats(false); }
-    function cPeekDeck() { if (deck.length > 0) alert(`Market Top: ${deck[deck.length-1].num} ${deck[deck.length-1].shape}`); toggleCheats(false); }
-    function cWipe() { cpuHand = []; checkEnd(); toggleCheats(false); }
-    function cInfinite() { pTurn = true; writeLog("Infinite turns active!"); toggleCheats(false); }
+    /* SECRET CHEATS SYSTEM */
+    function submitCheat() {
+      const code = document.getElementById('cheat-code-input').value.trim().toUpperCase();
+      const msg = document.getElementById('cheat-msg');
+
+      const cheatsMap = {
+        "PEEK": () => { peekCPU = !peekCPU; return "Peek Toggled!"; },
+        "WHOT20": () => { pHand.push({ shape: "Whot", num: 20 }); return "Whot 20 Card Added!"; },
+        "DRAW5": () => { if (deck.length >= 5) cpuHand.push(...deck.splice(0, 5)); return "Opponent Forced to Draw 5!"; },
+        "INSTAWIN": () => { pHand = []; checkEnd(); return "Instant Victory Executed!"; },
+        "SWAP": () => { let t = [...pHand]; pHand = [...cpuHand]; cpuHand = t; return "Hands Swapped Successfully!"; },
+        "SKIP": () => { pTurn = true; return "Opponent Skipped!"; },
+        "HOLDON": () => { pHand.push({ shape: "Circle", num: 1 }); return "Hold On Card Added!"; },
+        "PEEKDECK": () => { return deck.length > 0 ? `Market Top: ${deck[deck.length-1].num} ${deck[deck.length-1].shape}` : "Deck Empty!"; },
+        "WIPE": () => { cpuHand = []; checkEnd(); return "Opponent Hand Wiped!"; },
+        "INFINITE": () => { pTurn = true; return "Infinite Turns Enabled!"; }
+      };
+
+      if (cheatsMap[code]) {
+        const result = cheatsMap[code]();
+        msg.innerText = "⚡ SUCCESS: " + result;
+        msg.style.color = "#4ade80";
+        updateUI();
+        setTimeout(() => toggleCheats(false), 1200);
+      } else {
+        msg.innerText = "❌ ACCESS DENIED: Invalid Cheat Code";
+        msg.style.color = "#f87171";
+      }
+    }
 
     initGame();
   </script>
