@@ -291,14 +291,14 @@
     /* CARD RACKS (MOBILE FRIENDLY FLEX-WRAP) */
     .rack {
       display: flex;
-      flex-wrap: wrap; /* CONTINUES DOWN IF YOU HAVE TOO MANY CARDS */
+      flex-wrap: wrap;
       justify-content: center;
       align-items: center;
       margin: 0 auto;
       padding: 6px;
       min-height: 120px;
       max-height: 170px;
-      overflow-y: auto; /* SCROLLABLE FOR MOBILE PHONES */
+      overflow-y: auto;
       gap: 6px;
       width: 100%;
       max-width: 600px;
@@ -644,18 +644,16 @@
     let cpuHand = [];
     let topCard = null;
     
-    // Requested properties
     let requestedShape = null;
     let requestedNumber = null;
     let pendingCard = null;
-    let maxStepShape = null; // Used for 20 Max mode 2-step selection
+    let maxStepShape = null;
 
     let gameMode = "sp";
     let currentVariant = "classic";
     let pTurn = true;
     let peekCPU = false;
 
-    // Multiplayer Variables
     let peer = null;
     let connections = [];
     let isHost = false;
@@ -743,7 +741,6 @@
       
       document.getElementById('played-card-slot').innerHTML = renderCardHTML(topCard);
 
-      // UPDATE REQUESTED BADGE (SUPPORT FOR SHAPE, NUMBER, AND BOTH)
       const badge = document.getElementById('requested-badge');
       if (requestedShape || requestedNumber) {
         badge.style.display = 'block';
@@ -828,7 +825,6 @@
           return;
         }
 
-        // Clear active calls when playing regular card
         requestedShape = null;
         requestedNumber = null;
         finalizeTurn(c);
@@ -837,7 +833,6 @@
       }
     }
 
-    /* OPEN MODAL FOR WILD CALLS (SHAPE, NUMBER, OR MAX) */
     function openWildModal() {
       const grid = document.getElementById('modal-grid-options');
       grid.innerHTML = '';
@@ -1080,116 +1075,109 @@
       const roomNum = document.getElementById('mp-room').value || "1";
       const hostId = `dot40-whot-room-${roomNum}`;
 
-      document.getElementById('mp-lobby').style.display = 'none';
-      document.getElementById('player-label').innerText = myPlayerName;
-      document.getElementById('opp-icon').innerText = "🌐";
-      setTurnPill("Connecting to Room...", "#eab308");
+      if(peer) peer.destroy();
 
-      peer = new Peer();
+      peer = new Peer(hostId);
 
-      peer.on('open', () => {
-        let conn = peer.connect(hostId, { reliable: true });
+      peer.on('open', (id) => {
+        isHost = true;
+        setTurnPill("Host Room " + roomNum, "#facc15");
+        writeLog(`Created room ${roomNum} as Host.`);
+        document.getElementById('mp-lobby').style.display = 'none';
+        initGame();
+      });
 
-        conn.on('open', () => {
+      peer.on('error', (err) => {
+        if (err.type === 'unavailable-id') {
           isHost = false;
-          connections = [conn];
-          conn.send({ type: 'handshake', name: myPlayerName, variant: currentVariant });
-        });
+          peer = new Peer();
+          peer.on('open', (id) => {
+            const conn = peer.connect(hostId);
+            setupConnection(conn);
+            document.getElementById('mp-lobby').style.display = 'none';
+            writeLog(`Joined room ${roomNum} as Guest.`);
+            setTurnPill("Connected to Host", "#34d399");
+          });
+        } else {
+          writeLog("PeerJS Error: " + err.type);
+        }
+      });
 
-        conn.on('data', (data) => {
-          if (data.type === 'chat') {
-            appendChatMessage(data.sender, data.text);
-          } else if (data.type === 'rejected') {
-            alert(data.reason);
-            changeMode('sp');
-          } else if (data.type === 'accepted') {
-            writeLog(`Connected to Room ${roomNum}. Variant: ${data.variant.toUpperCase()}`);
-            setTurnPill("Waiting for match start...", "#3b82f6");
-          }
-        });
-
-        peer.on('error', (err) => {
-          if (err.type === 'peer-unavailable') {
-            peer.destroy();
-            peer = new Peer(hostId);
-
-            peer.on('open', () => {
-              isHost = true;
-              connections = [];
-              setTurnPill("Waiting for opponents (Max 2)...", "#3b82f6");
-              writeLog(`Room ${roomNum} created. Playing [${currentVariant.toUpperCase()}].`);
-            });
-
-            peer.on('connection', (c) => {
-              c.on('data', (data) => {
-                if (data.type === 'chat') {
-                  appendChatMessage(data.sender, data.text);
-                  // Relaying chat to all other connected peers
-                  connections.forEach(conn => { if (conn !== c) conn.send(data); });
-                } else if (data.type === 'handshake') {
-                  if (connections.length >= 3) {
-                    c.send({ type: 'rejected', reason: 'Room is full! Maximum 4 players allowed.' });
-                    return;
-                  }
-                  if (data.variant !== currentVariant) {
-                    c.send({ 
-                      type: 'rejected', 
-                      reason: `Variant Mismatch! Room Host is playing [${currentVariant.toUpperCase()}]. Change your dropdown variant to join!` 
-                    });
-                    return;
-                  }
-
-                  connections.push(c);
-                  c.send({ type: 'accepted', variant: currentVariant });
-                  document.getElementById('opp-label').innerText = `${connections.length} Opponents Connected`;
-                  writeLog(`${data.name} joined room.`);
-                }
-              });
-            });
-          }
-        });
+      peer.on('connection', (conn) => {
+        connections.push(conn);
+        setupConnection(conn);
+        writeLog("A player joined the room!");
+        setTurnPill("Player Connected!", "#34d399");
       });
     }
 
-    function toggleCheats(show) { 
-      document.getElementById('cheat-modal').style.display = show ? 'flex' : 'none'; 
-      if(show) {
-        document.getElementById('cheat-code-input').value = '';
-        document.getElementById('cheat-msg').innerText = 'Type secret code and press Enter';
-        document.getElementById('cheat-msg').style.color = '#94a3b8';
+    function setupConnection(conn) {
+      connections = [conn];
+      conn.on('data', (data) => {
+        handleNetData(data);
+      });
+      conn.on('close', () => {
+        writeLog("Connection closed.");
+        setTurnPill("Disconnected", "#ef4444");
+      });
+    }
+
+    function handleNetData(data) {
+      if (data.type === 'chat') {
+        appendChatMessage(data.sender, data.text);
+      } else if (data.type === 'sync') {
+        pHand = data.pHand;
+        cpuHand = data.cpuHand;
+        topCard = data.topCard;
+        requestedShape = data.requestedShape;
+        requestedNumber = data.requestedNumber;
+        pTurn = data.pTurn;
+        currentVariant = data.variant;
+        document.getElementById('whot-variant').value = currentVariant;
+        updateUI();
+        if(data.log) writeLog(data.log);
       }
+    }
+
+    /* ==== CHEATS & TERMINAL ==== */
+    function toggleCheats(show) {
+      document.getElementById('cheat-modal').style.display = show ? 'flex' : 'none';
+      if(show) document.getElementById('cheat-code-input').focus();
     }
 
     function submitCheat() {
       const code = document.getElementById('cheat-code-input').value.trim().toUpperCase();
       const msg = document.getElementById('cheat-msg');
-
-      const cheatsMap = {
-        "PEEK": () => { peekCPU = !peekCPU; return "Peek Toggled!"; },
-        "WHOT20": () => { pHand.push({ shape: "Whot", num: 20 }); return "Whot 20 Card Added!"; },
-        "DRAW5": () => { if (deck.length >= 5) cpuHand.push(...deck.splice(0, 5)); return "Opponent Forced to Draw 5!"; },
-        "INSTAWIN": () => { pHand = []; checkEnd(); return "Instant Victory Executed!"; },
-        "SWAP": () => { let t = [...pHand]; pHand = [...cpuHand]; cpuHand = t; return "Hands Swapped Successfully!"; },
-        "SKIP": () => { pTurn = true; return "Opponent Skipped!"; },
-        "HOLDON": () => { pHand.push({ shape: "Circle", num: 1 }); return "Hold On Card Added!"; },
-        "PEEKDECK": () => { return deck.length > 0 ? `Market Top: ${deck[deck.length-1].num} ${deck[deck.length-1].shape}` : "Deck Empty!"; },
-        "WIPE": () => { cpuHand = []; checkEnd(); return "Opponent Hand Wiped!"; },
-        "INFINITE": () => { pTurn = true; return "Infinite Turns Enabled!"; }
-      };
-
-      if (cheatsMap[code]) {
-        const result = cheatsMap[code]();
-        msg.innerText = "⚡ SUCCESS: " + result;
+      if (code === "PEEK") {
+        peekCPU = !peekCPU;
         msg.style.color = "#4ade80";
+        msg.innerText = peekCPU ? "Cheat Activated: CPU Cards Revealed!" : "Cheat Deactivated.";
         updateUI();
-        setTimeout(() => toggleCheats(false), 1200);
+      } else if (code === "GOD") {
+        pHand = [{ shape: "Circle", num: 1 }];
+        msg.style.color = "#4ade80";
+        msg.innerText = "Cheat Activated: God Mode Hand!";
+        updateUI();
+      } else if (code === "WIN") {
+        pHand = [];
+        msg.style.color = "#4ade80";
+        msg.innerText = "Cheat Activated: Instant Win!";
+        checkEnd();
+      } else if (code === "DOT40") {
+        msg.style.color = "#facc15";
+        msg.innerText = "Dot.40 Master Bypass Enabled!";
+        pHand.push({ shape: "Whot", num: 20 });
+        updateUI();
       } else {
-        msg.innerText = "❌ ACCESS DENIED: Invalid Cheat Code";
         msg.style.color = "#f87171";
+        msg.innerText = "Invalid Secret Code!";
       }
+      document.getElementById('cheat-code-input').value = '';
     }
 
-    initGame();
+    window.onload = () => {
+      initGame();
+    };
   </script>
 </body>
 </html>
