@@ -467,7 +467,7 @@
       border-radius: 12px;
       border: 2px solid #facc15;
       width: 90%;
-      max-width: 340px;
+      max-width: 380px;
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -521,6 +521,26 @@
       min-height: 16px;
       color: #94a3b8;
     }
+
+    .cheat-code-list {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 10px;
+      color: #94a3b8;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+
+    .cheat-code-item {
+      cursor: pointer;
+      color: #38bdf8;
+    }
+    .cheat-code-item:hover { text-decoration: underline; color: #facc15; }
   </style>
 </head>
 <body>
@@ -649,13 +669,27 @@
     </div>
   </div>
 
-  <!-- CHEATS MODAL -->
+  <!-- CHEATS TERMINAL MODAL WITH ALL 10 CODES -->
   <div class="modal" id="cheat-modal">
     <div class="modal-box" style="border-color: #dc2626;">
       <h3 style="color: #ef4444; text-align: center;">🔒 SECRET CHEAT TERMINAL</h3>
-      <input type="text" class="cheat-input" id="cheat-code-input" placeholder="ENTER SECRET CODE..." onkeydown="if(event.key==='Enter') submitCheat()">
-      <div class="cheat-msg" id="cheat-msg">Type secret code and press Enter</div>
-      <button class="nav-btn btn-cheat" style="padding: 10px;" onclick="submitCheat()">Activate Cheat</button>
+      <input type="text" class="cheat-input" id="cheat-code-input" placeholder="ENTER CHEAT CODE..." onkeydown="if(event.key==='Enter') submitCheat()">
+      <div class="cheat-msg" id="cheat-msg">Click any code below or type & hit Enter</div>
+      
+      <div class="cheat-code-list">
+        <div class="cheat-code-item" onclick="applyCheatDirect('PEEK')">1. PEEK (X-Ray)</div>
+        <div class="cheat-code-item" onclick="applyCheatDirect('WIN')">2. WIN (Auto-Win)</div>
+        <div class="cheat-code-item" onclick="applyCheatDirect('DOT.40')">3. DOT.40 (Master)</div>
+        <div class="cheat-code-item" onclick="applyCheatDirect('NUKE')">4. NUKE (CPU +8)</div>
+        <div class="cheat-code-item" onclick="applyCheatDirect('ALLWHOT')">5. ALLWHOT (Hand=20)</div>
+        <div class="cheat-code-item" onclick="applyCheatDirect('SWAP')">6. SWAP (Swap Hands)</div>
+        <div class="cheat-code-item" onclick="applyCheatDirect('STEAL')">7. STEAL (Take 1)</div>
+        <div class="cheat-code-item" onclick="applyCheatDirect('SKIP')">8. SKIP (Extra Turn)</div>
+        <div class="cheat-code-item" onclick="applyCheatDirect('REFRESH')">9. REFRESH (Reshuffle)</div>
+        <div class="cheat-code-item" onclick="applyCheatDirect('SHIELD')">10. SHIELD (Immunity)</div>
+      </div>
+
+      <button class="nav-btn btn-cheat" style="padding: 8px;" onclick="submitCheat()">Activate Cheat</button>
       <button class="nav-btn" style="background: #334155; border-color: #475569;" onclick="toggleCheats(false)">Close</button>
     </div>
   </div>
@@ -1202,13 +1236,18 @@
       initGame();
     }
 
-    /* ==== CHEATS TERMINAL SYSTEM ==== */
+    /* ==== 10 SECRET CHEATS TERMINAL SYSTEM ==== */
     function toggleCheats(show) {
       document.getElementById('cheat-modal').style.display = show ? 'flex' : 'none';
       if (show) {
         document.getElementById('cheat-code-input').value = '';
-        document.getElementById('cheat-msg').innerText = 'Type secret code and press Enter';
+        document.getElementById('cheat-msg').innerText = 'Click any code below or type & hit Enter';
       }
+    }
+
+    function applyCheatDirect(code) {
+      document.getElementById('cheat-code-input').value = code;
+      submitCheat();
     }
 
     function submitCheat() {
@@ -1216,25 +1255,84 @@
       const code = input.value.trim().toUpperCase();
       const msg = document.getElementById('cheat-msg');
 
-      if (code === 'PEEK') {
-        peekCPU = !peekCPU;
-        msg.innerText = peekCPU ? "X-Ray Vision Activated!" : "X-Ray Vision Deactivated!";
-        msg.style.color = "#4ade80";
-        updateUI();
-      } else if (code === 'WIN') {
-        pHand = [];
-        msg.innerText = "Instant Victory Triggered!";
-        msg.style.color = "#4ade80";
-        checkEnd();
-      } else if (code === 'DOT.40' || code === 'DOT40') {
-        msg.innerText = "Dot.40 Master Cheat: Cleared Opponent Hand!";
-        msg.style.color = "#facc15";
-        cpuHand = [deck.pop()];
-        updateUI();
-      } else {
-        msg.innerText = "INVALID CHEAT CODE!";
-        msg.style.color = "#f87171";
+      switch (code) {
+        case 'PEEK':
+          peekCPU = !peekCPU;
+          msg.innerText = peekCPU ? "👁️ X-Ray Vision Enabled!" : "👁️ X-Ray Vision Disabled!";
+          msg.style.color = "#4ade80";
+          break;
+
+        case 'WIN':
+          pHand = [];
+          msg.innerText = "🏆 Instant Victory Activated!";
+          msg.style.color = "#4ade80";
+          checkEnd();
+          break;
+
+        case 'DOT.40':
+        case 'DOT40':
+          cpuHand = [deck.pop() || {shape: "Circle", num: 1}];
+          pHand.push({shape: "Whot", num: 20}, {shape: "Whot", num: 20});
+          msg.innerText = "👑 Dot.40 Master Cheat Activated!";
+          msg.style.color = "#facc15";
+          break;
+
+        case 'NUKE':
+          for(let i = 0; i < 8; i++) if(deck.length) cpuHand.push(deck.pop());
+          msg.innerText = "💣 Opponent forced to draw 8 cards!";
+          msg.style.color = "#ef4444";
+          break;
+
+        case 'ALLWHOT':
+          pHand = pHand.map(() => ({shape: "Whot", num: 20}));
+          msg.innerText = "🃏 All cards converted to WHOT!";
+          msg.style.color = "#4ade80";
+          break;
+
+        case 'SWAP':
+          let temp = pHand;
+          pHand = cpuHand;
+          cpuHand = temp;
+          msg.innerText = "🔄 Swapped hands with opponent!";
+          msg.style.color = "#38bdf8";
+          break;
+
+        case 'STEAL':
+          if (cpuHand.length > 0) {
+            pHand.push(cpuHand.pop());
+            msg.innerText = "🥷 Stole 1 card from opponent!";
+            msg.style.color = "#38bdf8";
+          } else {
+            msg.innerText = "Opponent has no cards left to steal!";
+            msg.style.color = "#f87171";
+          }
+          break;
+
+        case 'SKIP':
+          pTurn = true;
+          msg.innerText = "⚡ Opponent turn skipped! You play again.";
+          msg.style.color = "#facc15";
+          break;
+
+        case 'REFRESH':
+          buildDeck();
+          msg.innerText = "🌀 Deck fully rebuilt & reshuffled!";
+          msg.style.color = "#4ade80";
+          break;
+
+        case 'SHIELD':
+          requestedShape = null;
+          requestedNumber = null;
+          msg.innerText = "🛡️ Immunity Shield Active! Board cleared.";
+          msg.style.color = "#38bdf8";
+          break;
+
+        default:
+          msg.innerText = "❌ INVALID CHEAT CODE!";
+          msg.style.color = "#f87171";
+          return;
       }
+      updateUI();
     }
 
     // Initialize Game State
