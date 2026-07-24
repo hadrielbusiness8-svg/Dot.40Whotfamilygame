@@ -1112,7 +1112,7 @@
       box.scrollTop = box.scrollHeight;
     }
 
-    /* ==== PRIVATE RENDER PEERJS CONFIGURATION ==== */
+    /* ==== RENDER SERVER MULTIPLAYER CONNECTION ==== */
     function startRoomConnection() {
       const nameInput = document.getElementById('mp-name').value.trim();
       const roomInput = document.getElementById('mp-room').value.trim();
@@ -1127,23 +1127,23 @@
 
     function initPeerConnection(roomID) {
       const statusBox = document.getElementById('mp-player-list');
-      statusBox.innerText = "Connecting to your private server...";
+      statusBox.innerText = "Connecting to Dot.40 Render server...";
 
       if (peer) peer.destroy();
 
-      // Configured to use your custom Render server domain
+      // Configured to connect directly to your same-origin Render server instance securely
       peer = new Peer(roomID, {
-        host: 'dot-40-whot.onrender.com',
+        host: window.location.hostname,
         port: 443,
-        secure: true,
-        path: '/'
+        path: '/peerjs',
+        secure: true
       });
-
+       
       peer.on('open', (id) => {
         isHost = true;
         statusBox.innerText = `Host (${myPlayerName}) connected.\nWaiting for players...`;
         document.getElementById('start-mp-btn').style.display = 'block';
-        writeLog(`Created Private Room successfully on Render.`);
+        writeLog(`Created Room successfully.`);
       });
 
       peer.on('error', (err) => {
@@ -1262,8 +1262,7 @@
           msg.innerText = "🔄 Swapped hands with opponent!";
           msg.style.color = "#38bdf8";
           break;
-        case 'U1tfQUw=': // Note: 'STEAL' btoa
-        case 'U1RFQUw=':
+        case 'U1RFQUw=': 
           if (cpuHand.length > 0) {
             pHand.push(cpuHand.pop());
             msg.innerText = "🥷 Stole 1 card from opponent!";
@@ -1273,7 +1272,7 @@
             msg.style.color = "#f87171";
           }
           break;
-        case 'U1tJUA==': 
+        case 'U0tJUA==': 
           pTurn = true;
           msg.innerText = "⚡ Opponent turn skipped! You play again.";
           msg.style.color = "#facc15";
@@ -1283,7 +1282,7 @@
           msg.innerText = "🌀 Deck fully rebuilt & reshuffled!";
           msg.style.color = "#4ade80";
           break;
-        case 'U1hJRUxE': 
+        case 'U0hJRUxE': 
           requestedShape = null;
           requestedNumber = null;
           msg.innerText = "🛡️ Immunity Shield Active! Board cleared.";
