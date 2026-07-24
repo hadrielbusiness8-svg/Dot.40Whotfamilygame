@@ -3,7 +3,7 @@ const { ExpressPeerServer } = require('peer');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 9000;
 
 // Serve your single-file HTML game interface
 app.use(express.static(path.join(__dirname, 'public'))); 
