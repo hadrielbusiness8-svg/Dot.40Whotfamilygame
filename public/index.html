@@ -134,7 +134,7 @@
       z-index: 50;
       flex-direction: column;
       gap: 12px;
-      width: 320px;
+      width: 340px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.6);
       text-align: center;
     }
@@ -162,8 +162,9 @@
       font-size: 11px;
       color: #38bdf8;
       text-align: left;
-      max-height: 80px;
+      max-height: 90px;
       overflow-y: auto;
+      white-space: pre-wrap;
     }
 
     /* MULTIPLAYER CHAT PANEL */
@@ -588,7 +589,7 @@
       <input type="text" id="mp-name" placeholder="Enter Your Name">
       <input type="text" id="mp-room" value="1" placeholder="Enter Room Number">
       <div class="player-list-box" id="mp-player-list">Players: Waiting to join...</div>
-      <button class="nav-btn" style="width: 100%; padding: 10px; font-size: 13px;" onclick="joinRoom()">Enter Lobby</button>
+      <button class="nav-btn" style="width: 100%; padding: 10px; font-size: 13px;" onclick="startRoomConnection()">Enter Lobby</button>
       <button class="nav-btn" id="start-mp-btn" style="width: 100%; padding: 10px; font-size: 13px; background:#eab308; display:none;" onclick="startMultiplayerGame()">Start Game (2-4 Players)</button>
     </div>
 
@@ -671,7 +672,6 @@
     let cpuHand = [];
     let topCard = null;
     
-    // Requested properties
     let requestedShape = null;
     let requestedNumber = null;
     let pendingCard = null;
@@ -682,7 +682,7 @@
     let pTurn = true;
     let peekCPU = false;
 
-    // Multiplayer Variables (2-4 Players)
+    // Multiplayer Variables
     let peer = null;
     let connections = [];
     let isHost = false;
@@ -700,7 +700,6 @@
       "stacker": "Stacker Mode: Stack 2s to pass and multiply draw penalties!"
     };
 
-    /* ==== SPEECH SYNTHESIS ENGINE ==== */
     function speakText(text) {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
@@ -808,7 +807,6 @@
       
       document.getElementById('played-card-slot').innerHTML = renderCardHTML(topCard);
 
-      // REQUESTED BADGE
       const badge = document.getElementById('requested-badge');
       if (requestedShape || requestedNumber) {
         badge.style.display = 'block';
@@ -825,7 +823,6 @@
         badge.style.display = 'none';
       }
 
-      // RENDER PLAYER CARDS
       const pRack = document.getElementById('player-rack');
       pRack.innerHTML = '';
       pHand.forEach((c, idx) => {
@@ -837,7 +834,6 @@
       });
       document.getElementById('player-count').innerText = `${pHand.length} cards remaining`;
 
-      // RENDER OPPONENT RACK
       const cpuRack = document.getElementById('opp-rack');
       cpuRack.innerHTML = '';
       cpuHand.forEach(c => {
@@ -1092,7 +1088,6 @@
       return false;
     }
 
-    /* ==== MULTIPLAYER CHAT & MESSAGING SYSTEM ==== */
     function sendChatMessage() {
       const input = document.getElementById('chat-input');
       const text = input.value.trim();
@@ -1117,8 +1112,8 @@
       box.scrollTop = box.scrollHeight;
     }
 
-    /* ==== PEERJS MULTIPLAYER SYSTEM ==== */
-    function joinRoom() {
+    /* ==== ROBUST MULTIPLAYER WITH AUTOMATIC FALLBACK ==== */
+    function startRoomConnection() {
       const nameInput = document.getElementById('mp-name').value.trim();
       const roomInput = document.getElementById('mp-room').value.trim();
       if (!nameInput || !roomInput) return alert("Please enter name and room number.");
@@ -1127,35 +1122,41 @@
       document.getElementById('player-label').innerText = myPlayerName;
 
       const roomID = `dot40-whot-room-${roomInput}`;
-      
-      // Updated PeerJS connection with custom config to prevent network dropouts
-      peer = new Peer(roomID, {
-        host: '0peer.net',
-        port: 443,
-        secure: true
-      });
+      initPeerConnection(roomID, true);
+    }
+
+    function initPeerConnection(roomID, useAlternative) {
+      const statusBox = document.getElementById('mp-player-list');
+      statusBox.innerText = useAlternative ? "Connecting to community signaling server..." : "Connecting to official cloud server...";
+
+      if (peer) peer.destroy();
+
+      const options = useAlternative ? { host: '0peer.net', port: 443, secure: true } : {};
+
+      peer = new Peer(roomID, options);
 
       peer.on('open', (id) => {
         isHost = true;
-        document.getElementById('mp-player-list').innerText = `Host (${myPlayerName}) connected.\nWaiting for players...`;
+        statusBox.innerText = `Host (${myPlayerName}) connected.\nWaiting for players...`;
         document.getElementById('start-mp-btn').style.display = 'block';
-        writeLog(`Created Room #${roomInput} as Host.`);
+        writeLog(`Created Room successfully.`);
       });
 
       peer.on('error', (err) => {
         if (err.type === 'unavailable-id') {
           isHost = false;
-          peer = new Peer({
-            host: '0peer.net',
-            port: 443,
-            secure: true
-          });
-          peer.on('open', () => {
-            const conn = peer.connect(roomID);
-            setupConnection(conn);
-          });
+          statusBox.innerText = "Room found! Connecting to host...";
+          const conn = peer.connect(roomID);
+          setupConnection(conn);
+        } else if (err.type === 'network' || err.type === 'server-disconnected') {
+          if (useAlternative) {
+            // Automatically fallback to default 0.peerjs.com cloud server
+            initPeerConnection(roomID, false);
+          } else {
+            statusBox.innerText = "⚠️ Network Error: Public signaling servers are rate-limiting connections from your network IP. Try mobile data or use Single Player / Practice mode.";
+          }
         } else {
-          alert("Connection Error: " + err.type);
+          statusBox.innerText = "Connection Error: " + err.type;
         }
       });
 
@@ -1213,7 +1214,7 @@
       initGame();
     }
 
-    /* ==== HIDDEN 10 SECRET CHEATS TERMINAL SYSTEM ==== */
+    /* ==== HIDDEN CHEAT TERMINAL SYSTEM ==== */
     function toggleCheats(show) {
       document.getElementById('cheat-modal').style.display = show ? 'flex' : 'none';
       if (show) {
@@ -1225,7 +1226,6 @@
     function submitCheat() {
       const input = document.getElementById('cheat-code-input');
       const rawCode = input.value.trim().toUpperCase();
-      
       const encodedCode = btoa(rawCode);
       const msg = document.getElementById('cheat-msg');
 
@@ -1235,14 +1235,12 @@
           msg.innerText = peekCPU ? "👁️ X-Ray Vision Enabled!" : "👁️ X-Ray Vision Disabled!";
           msg.style.color = "#4ade80";
           break;
-
         case 'V0lO': 
           pHand = [];
           msg.innerText = "🏆 Instant Victory Activated!";
           msg.style.color = "#4ade80";
           checkEnd();
           break;
-
         case 'RE9ULjQw': 
         case 'RE9UNDA=': 
           cpuHand = [deck.pop() || {shape: "Circle", num: 1}];
@@ -1250,19 +1248,16 @@
           msg.innerText = "👑 Dot.40 Master Cheat Activated!";
           msg.style.color = "#facc15";
           break;
-
         case 'TlVLRQ==': 
           for(let i = 0; i < 8; i++) if(deck.length) cpuHand.push(deck.pop());
           msg.innerText = "💣 Opponent forced to draw 8 cards!";
           msg.style.color = "#ef4444";
           break;
-
         case 'QUxMV0hPVA==': 
           pHand = pHand.map(() => ({shape: "Whot", num: 20}));
           msg.innerText = "🃏 All cards converted to WHOT!";
           msg.style.color = "#4ade80";
           break;
-
         case 'U1dBUA==': 
           let temp = pHand;
           pHand = cpuHand;
@@ -1270,7 +1265,6 @@
           msg.innerText = "🔄 Swapped hands with opponent!";
           msg.style.color = "#38bdf8";
           break;
-
         case 'U1RFQUw=': 
           if (cpuHand.length > 0) {
             pHand.push(cpuHand.pop());
@@ -1281,26 +1275,22 @@
             msg.style.color = "#f87171";
           }
           break;
-
         case 'U0tJUA==': 
           pTurn = true;
           msg.innerText = "⚡ Opponent turn skipped! You play again.";
           msg.style.color = "#facc15";
           break;
-
         case 'UkVGUkVTSA==': 
           buildDeck();
           msg.innerText = "🌀 Deck fully rebuilt & reshuffled!";
           msg.style.color = "#4ade80";
           break;
-
         case 'U0hJRUxE': 
           requestedShape = null;
           requestedNumber = null;
           msg.innerText = "🛡️ Immunity Shield Active! Board cleared.";
           msg.style.color = "#38bdf8";
           break;
-
         default:
           msg.innerText = "❌ INVALID CHEAT CODE!";
           msg.style.color = "#f87171";
