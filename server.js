@@ -15,7 +15,7 @@ const server = app.listen(PORT, () => {
 // 2. Configure the PeerJS signaling server
 const peerServer = ExpressPeerServer(server, {
     debug: true,
-    path: 'dot-40-whot.onrender.com/peerjs', 
+    path: 'dot-40-whot.onrender.com', 
 });
 
 // 3. Mount the PeerJS server to the /peerjs route
