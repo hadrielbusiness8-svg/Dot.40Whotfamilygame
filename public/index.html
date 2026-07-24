@@ -585,21 +585,21 @@
 
     <!-- MULTIPLAYER LOBBY -->
     <div class="mp-lobby" id="mp-lobby">
-      <h3>Join/Host Room (2 - 4 Players)</h3>
+      <h3>Join/Host Room (2 Players)</h3>
       <input type="text" id="mp-name" placeholder="Enter Your Name">
       <input type="text" id="mp-room" value="1" placeholder="Enter Room Number">
       <div class="player-list-box" id="mp-player-list">Players: Waiting to join...</div>
       <button class="nav-btn" style="width: 100%; padding: 10px; font-size: 13px;" onclick="startRoomConnection()">Enter Lobby</button>
-      <button class="nav-btn" id="start-mp-btn" style="width: 100%; padding: 10px; font-size: 13px; background:#eab308; display:none;" onclick="startMultiplayerGame()">Start Game (2-4 Players)</button>
+      <button class="nav-btn" id="start-mp-btn" style="width: 100%; padding: 10px; font-size: 13px; background:#eab308; display:none;" onclick="startMultiplayerGame()">Start Match Against Brother</button>
     </div>
 
     <!-- OPPONENT AREA -->
     <div>
       <div class="badge badge-opp">
-        <div class="badge-icon" id="opp-icon">🤖</div>
+        <div class="badge-icon" id="opp-icon">👤</div>
         <div class="badge-info">
-          <span class="badge-name" id="opp-label">Computer Pro</span>
-          <span class="badge-sub" id="opp-count">5 cards remaining</span>
+          <span class="badge-name" id="opp-label">Opponent</span>
+          <span class="badge-sub" id="opp-count">Waiting...</span>
         </div>
       </div>
       <div class="rack" id="opp-rack" style="margin-top: -10px;"></div>
@@ -669,7 +669,7 @@
 
     let deck = [];
     let pHand = [];
-    let cpuHand = [];
+    let cpuHand = []; // Used for bot in SP, or opponent hand count/cards in MP
     let topCard = null;
     
     let requestedShape = null;
@@ -684,9 +684,11 @@
 
     // Multiplayer Variables
     let peer = null;
-    let connections = [];
+    let hostConn = null;
+    let clientConns = [];
     let isHost = false;
     let myPlayerName = "Player 1";
+    let opponentName = "Opponent";
 
     const variantLessons = {
       "classic": "Classic Rules: 1 = Hold On, 2 = Pick 2, 5 = Pick 3, 8 = Skip, 14 = General Market, 20 = Whot.",
@@ -713,7 +715,9 @@
 
     function writeLog(t) {
       const b = document.getElementById('log-box');
-      b.innerText = t + "\n" + b.innerText;
+      if(b) {
+        b.innerText = t + "\n" + b.innerText;
+      }
       speakText(t);
     }
 
@@ -773,7 +777,7 @@
       }
 
       if (m === 'sp' || m === 'pr') {
-        document.getElementById('player-label').innerText = "Player 1";
+        document.getElementById('player-label').innerText = myPlayerName;
         document.getElementById('opp-label').innerText = "Computer Pro";
         document.getElementById('opp-icon').innerText = "🤖";
         initGame();
@@ -789,8 +793,10 @@
 
     function setTurnPill(text, color = "#34d399") {
       const pill = document.getElementById('turn-indicator');
-      pill.innerText = text;
-      pill.style.borderColor = color;
+      if(pill) {
+        pill.innerText = text;
+        pill.style.borderColor = color;
+      }
     }
 
     function isCardPlayable(c) {
@@ -803,9 +809,7 @@
     }
 
     function updateUI() {
-      if (gameMode !== 'mp' || pHand.length > 0) {
-        setTurnPill(pTurn ? "Your Turn" : "Opponent Turn", pTurn ? "#34d399" : "#ef4444");
-      }
+      setTurnPill(pTurn ? "Your Turn" : `${opponentName}'s Turn`, pTurn ? "#34d399" : "#ef4444");
       
       document.getElementById('played-card-slot').innerHTML = renderCardHTML(topCard);
 
@@ -834,25 +838,21 @@
         div.onclick = () => playCard(idx);
         pRack.appendChild(div);
       });
-      if (gameMode !== 'mp' || pHand.length > 0) {
-        document.getElementById('player-count').innerText = `${pHand.length} cards remaining`;
-      }
+      document.getElementById('player-count').innerText = `${pHand.length} cards remaining`;
 
       const cpuRack = document.getElementById('opp-rack');
       cpuRack.innerHTML = '';
-      cpuHand.forEach(c => {
+      for (let i = 0; i < cpuHand.length; i++) {
         const div = document.createElement('div');
-        if (peekCPU && c.shape) {
-          div.innerHTML = renderCardHTML(c);
+        if (peekCPU && cpuHand[i].shape) {
+          div.innerHTML = renderCardHTML(cpuHand[i]);
         } else {
           div.className = "card back";
           div.innerHTML = `<div class="watermark">WHOT!</div>`;
         }
         cpuRack.appendChild(div);
-      });
-      if (gameMode !== 'mp' || cpuHand.length > 0) {
-        document.getElementById('opp-count').innerText = `${cpuHand.length} cards remaining`;
       }
+      document.getElementById('opp-count').innerText = `${cpuHand.length} cards remaining`;
 
       if (gameMode === 'pr' && pTurn) givePracticeHint();
     }
@@ -974,37 +974,25 @@
       let holdOn = false;
       if (currentVariant !== 'peaceful') {
         if (c.num === 1) holdOn = true;
-        if (c.num === 2) {
-          let p = (currentVariant === 'double') ? 4 : 2;
-          writeLog(`Pick ${p}! Opponent penalized.`);
-          for(let i=0; i<p; i++) if(deck.length) cpuHand.push(deck.pop());
-        }
-        if (c.num === 5) {
-          let p = (currentVariant === 'double') ? 6 : 3;
-          writeLog(`Pick ${p}! Opponent penalized.`);
-          for(let i=0; i<p; i++) if(deck.length) cpuHand.push(deck.pop());
-        }
-        if (c.num === 14 && currentVariant !== 'no-general') {
-          writeLog("General Market! Opponent draws 1.");
-          if(deck.length) cpuHand.push(deck.pop());
-        }
       }
 
       if (gameMode === 'mp') {
-        broadcastData({
+        pTurn = false;
+        sendToPeer({
           type: 'play_card',
           sender: myPlayerName,
           card: c,
           requestedShape: requestedShape,
-          requestedNumber: requestedNumber
+          requestedNumber: requestedNumber,
+          myNewHandCount: pHand.length
         });
-      }
-
-      if (holdOn) {
-        writeLog("Hold On! Play again.");
       } else {
-        pTurn = false;
-        if (gameMode !== 'mp') setTimeout(cpuTurn, 1000);
+        if (holdOn) {
+          writeLog("Hold On! Play again.");
+        } else {
+          pTurn = false;
+          setTimeout(cpuTurn, 1000);
+        }
       }
       updateUI();
     }
@@ -1012,25 +1000,21 @@
     function playerDraw() {
       if (!pTurn || deck.length === 0) return;
 
-      if (currentVariant === 'endless') {
-        writeLog("Endless Market: Drawing until playable card found...");
-        let drawn = null;
-        while(deck.length > 0) {
-          drawn = deck.pop();
-          pHand.push(drawn);
-          if (isCardPlayable(drawn)) {
-            writeLog(`Found playable card: ${drawn.num} ${drawn.shape}!`);
-            break;
-          }
-        }
-      } else {
-        pHand.push(deck.pop());
-        writeLog("You drew a card.");
-      }
+      pHand.push(deck.pop());
+      writeLog("You drew a card.");
 
-      pTurn = false;
+      if (gameMode === 'mp') {
+        pTurn = false;
+        sendToPeer({
+          type: 'draw_card',
+          sender: myPlayerName,
+          myNewHandCount: pHand.length
+        });
+      } else {
+        pTurn = false;
+        setTimeout(cpuTurn, 1000);
+      }
       updateUI();
-      if (gameMode !== 'mp') setTimeout(cpuTurn, 1000);
     }
 
     function cpuTurn() {
@@ -1044,19 +1028,9 @@
         const isWild = (c.num === 20) || (currentVariant === 'wild8' && c.num === 8);
 
         if (isWild) {
-          if (currentVariant === '20number') {
-            requestedNumber = 5;
-            requestedShape = null;
-            writeLog(`Opponent played WHOT and called NUMBER [${requestedNumber}]`);
-          } else if (currentVariant === '20max') {
-            requestedShape = "Circle";
-            requestedNumber = 7;
-            writeLog(`Opponent played WHOT MAX and called [CIRCLE & NUMBER 7]`);
-          } else {
-            requestedShape = "Triangle";
-            requestedNumber = null;
-            writeLog(`Opponent played WHOT and called [TRIANGLE]`);
-          }
+          requestedShape = "Triangle";
+          requestedNumber = null;
+          writeLog(`Opponent played WHOT and called [TRIANGLE]`);
         } else {
           requestedShape = null;
           requestedNumber = null;
@@ -1089,8 +1063,8 @@
     }
 
     function checkEnd() {
-      if (pHand.length === 0) { alert("You Won!"); initGame(); return true; }
-      if (cpuHand.length === 0) { alert("Opponent Won!"); initGame(); return true; }
+      if (pHand.length === 0) { alert("You Won!"); if(gameMode!=='mp') initGame(); return true; }
+      if (cpuHand.length === 0) { alert(`${opponentName} Won!`); if(gameMode!=='mp') initGame(); return true; }
       return false;
     }
 
@@ -1100,25 +1074,27 @@
       if (!text) return;
 
       appendChatMessage(myPlayerName, text);
-      broadcastData({ type: 'chat', sender: myPlayerName, message: text });
+      sendToPeer({ type: 'chat', sender: myPlayerName, message: text });
       input.value = '';
     }
 
     function sendEmoji(e) {
       appendChatMessage(myPlayerName, e);
-      broadcastData({ type: 'chat', sender: myPlayerName, message: e });
+      sendToPeer({ type: 'chat', sender: myPlayerName, message: e });
     }
 
     function appendChatMessage(sender, msg) {
       const box = document.getElementById('chat-messages');
-      const div = document.createElement('div');
-      div.className = 'chat-msg-item';
-      div.innerHTML = `<strong>${sender}:</strong> ${msg}`;
-      box.appendChild(div);
-      box.scrollTop = box.scrollHeight;
+      if(box) {
+        const div = document.createElement('div');
+        div.className = 'chat-msg-item';
+        div.innerHTML = `<strong>${sender}:</strong> ${msg}`;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+      }
     }
 
-    /* ==== ROBUST RENDER SERVER MULTIPLAYER CONNECTION ==== */
+    /* ==== P2P MULTIPLAYER NETWORK LAYER ==== */
     function startRoomConnection() {
       const nameInput = document.getElementById('mp-name').value.trim();
       const roomInput = document.getElementById('mp-room').value.trim();
@@ -1137,7 +1113,6 @@
 
       if (peer) peer.destroy();
 
-      // Step 1: Try creating the peer taking the room ID (Host role)
       peer = new Peer(roomID, {
         host: window.location.hostname,
         port: 443,
@@ -1147,15 +1122,14 @@
        
       peer.on('open', (id) => {
         isHost = true;
-        statusBox.innerText = `Host (${myPlayerName}) connected.\nWaiting for players to join...`;
+        statusBox.innerText = `Host (${myPlayerName}) connected.\nWaiting for your brother to join...`;
         document.getElementById('start-mp-btn').style.display = 'block';
         writeLog(`Created Room successfully.`);
       });
 
       peer.on('error', (err) => {
         if (err.type === 'unavailable-id') {
-          // Step 2: Room ID already taken! Join as Client instead.
-          statusBox.innerText = "Room active! Connecting as client...";
+          statusBox.innerText = "Room found! Connecting to host...";
           isHost = false;
           document.getElementById('start-mp-btn').style.display = 'none';
 
@@ -1168,13 +1142,13 @@
           });
 
           peer.on('open', (id) => {
-            const conn = peer.connect(roomID);
-            setupConnection(conn);
+            hostConn = peer.connect(roomID);
+            setupConnection(hostConn);
             statusBox.innerText = "Connected to Host successfully!";
           });
 
           peer.on('error', (e) => {
-            statusBox.innerText = "Client Connection Error: " + e.type;
+            statusBox.innerText = "Connection Error: " + e.type;
           });
         } else {
           statusBox.innerText = "Connection Error: " + err.type;
@@ -1183,13 +1157,13 @@
 
       peer.on('connection', (conn) => {
         setupConnection(conn);
+        clientConns.push(conn);
       });
     }
 
     function setupConnection(conn) {
-      connections.push(conn);
       conn.on('open', () => {
-        writeLog("Connection established!");
+        writeLog("Connection established with opponent!");
         conn.send({ type: 'join', name: myPlayerName });
       });
 
@@ -1198,41 +1172,92 @@
       });
 
       conn.on('close', () => {
-        connections = connections.filter(c => c !== conn);
-        writeLog("A player disconnected.");
+        writeLog("Opponent disconnected.");
       });
     }
 
-    function broadcastData(data) {
-      connections.forEach(conn => {
-        if (conn.open) conn.send(data);
-      });
+    function sendToPeer(data) {
+      if (isHost) {
+        clientConns.forEach(c => { if(c.open) c.send(data); });
+      } else if (hostConn && hostConn.open) {
+        hostConn.send(data);
+      }
     }
 
     function handleNetworkData(data, conn) {
       if (data.type === 'chat') {
         appendChatMessage(data.sender, data.message);
       } else if (data.type === 'join') {
+        opponentName = data.name;
+        document.getElementById('opp-label').innerText = opponentName;
+        document.getElementById('opp-icon').innerText = "👤";
         document.getElementById('mp-player-list').innerText += `\nJoined: ${data.name}`;
-      } else if (data.type === 'game_start') {
+      } else if (data.type === 'start_game') {
+        deck = data.deck;
+        topCard = data.topCard;
+        pHand = data.clientHand;
+        cpuHand = new Array(data.hostHandCount).fill({});
+        pTurn = data.clientTurn;
+        opponentName = data.hostName;
+        document.getElementById('opp-label').innerText = opponentName;
+        document.getElementById('opp-icon').innerText = "👤";
         document.getElementById('mp-lobby').style.display = 'none';
-        writeLog("Multiplayer match started!");
-        initGame();
+        writeLog("Multiplayer match started against " + opponentName + "!");
+        updateUI();
       } else if (data.type === 'play_card') {
         topCard = data.card;
         requestedShape = data.requestedShape;
         requestedNumber = data.requestedNumber;
+        cpuHand = new Array(data.myNewHandCount).fill({});
         pTurn = true;
         writeLog(`${data.sender} played ${data.card.num} ${data.card.shape}`);
+        updateUI();
+      } else if (data.type === 'draw_card') {
+        cpuHand = new Array(data.myNewHandCount).fill({});
+        pTurn = true;
+        writeLog(`${data.sender} drew a card.`);
+        updateUI();
+      } else if (data.type === 'sync_state') {
+        cpuHand = new Array(data.handCount).fill({});
+        topCard = data.topCard;
+        requestedShape = data.requestedShape;
+        requestedNumber = data.requestedNumber;
         updateUI();
       }
     }
 
     function startMultiplayerGame() {
-      if (!isHost) return;
-      broadcastData({ type: 'game_start' });
+      if (!isHost || clientConns.length === 0) return alert("Waiting for opponent to connect!");
+      
+      buildDeck();
+      let hostHand = deck.splice(0, 5);
+      let clientHand = deck.splice(0, 5);
+      
+      topCard = deck.pop();
+      while (isSpecialCard(topCard) && deck.length > 0) {
+        deck.unshift(topCard);
+        topCard = deck.pop();
+      }
+
+      pHand = hostHand;
+      cpuHand = new Array(clientHand.length).fill({});
+      pTurn = true; // Host starts
+
+      opponentName = document.getElementById('opp-label').innerText !== "Opponent" ? document.getElementById('opp-label').innerText : "Brother";
+
+      sendToPeer({
+        type: 'start_game',
+        deck: deck,
+        topCard: topCard,
+        clientHand: clientHand,
+        hostHandCount: hostHand.length,
+        clientTurn: false,
+        hostName: myPlayerName
+      });
+
       document.getElementById('mp-lobby').style.display = 'none';
-      initGame();
+      writeLog("Match started!");
+      updateUI();
     }
 
     /* ==== HIDDEN CHEAT TERMINAL SYSTEM ==== */
@@ -1264,53 +1289,14 @@
           break;
         case 'RE9ULjQw': 
         case 'RE9UNDA=': 
-          cpuHand = [deck.pop() || {shape: "Circle", num: 1}];
           pHand.push({shape: "Whot", num: 20}, {shape: "Whot", num: 20});
           msg.innerText = "👑 Dot.40 Master Cheat Activated!";
-          msg.style.color = "#facc15";
-          break;
-        case 'TlVLRQ==': 
-          for(let i = 0; i < 8; i++) if(deck.length) cpuHand.push(deck.pop());
-          msg.innerText = "💣 Opponent forced to draw 8 cards!";
-          msg.style.color = "#ef4444";
-          break;
-        case 'QUxMV0hPVA==': 
-          pHand = pHand.map(() => ({shape: "Whot", num: 20}));
-          msg.innerText = "🃏 All cards converted to WHOT!";
-          msg.style.color = "#4ade80";
-          break;
-        case 'U1dBUA==': 
-          let temp = pHand;
-          pHand = cpuHand;
-          cpuHand = temp;
-          msg.innerText = "🔄 Swapped hands with opponent!";
-          msg.style.color = "#38bdf8";
-          break;
-        case 'U1RFQUw=': 
-          if (cpuHand.length > 0) {
-            pHand.push(cpuHand.pop());
-            msg.innerText = "🥷 Stole 1 card from opponent!";
-            msg.style.color = "#38bdf8";
-          } else {
-            msg.innerText = "Opponent has no cards left to steal!";
-            msg.style.color = "#f87171";
-          }
-          break;
-        case 'U0tJUA==': 
-          pTurn = true;
-          msg.innerText = "⚡ Opponent turn skipped! You play again.";
           msg.style.color = "#facc15";
           break;
         case 'UkVGUkVTSA==': 
           buildDeck();
           msg.innerText = "🌀 Deck fully rebuilt & reshuffled!";
           msg.style.color = "#4ade80";
-          break;
-        case 'U0hJRUxE': 
-          requestedShape = null;
-          requestedNumber = null;
-          msg.innerText = "🛡️ Immunity Shield Active! Board cleared.";
-          msg.style.color = "#38bdf8";
           break;
         default:
           msg.innerText = "❌ INVALID CHEAT CODE!";
