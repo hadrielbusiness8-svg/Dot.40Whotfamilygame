@@ -1112,7 +1112,7 @@
       box.scrollTop = box.scrollHeight;
     }
 
-    /* ==== LOCAL PEERJS SERVER CONFIGURATION ==== */
+    /* ==== ROBUST MULTIPLAYER WITH AUTOMATIC FALLBACK ==== */
     function startRoomConnection() {
       const nameInput = document.getElementById('mp-name').value.trim();
       const roomInput = document.getElementById('mp-room').value.trim();
@@ -1122,23 +1122,24 @@
       document.getElementById('player-label').innerText = myPlayerName;
 
       const roomID = `dot40-whot-room-${roomInput}`;
-      initPeerConnection(roomID);
+      initPeerConnection(roomID, true);
     }
 
-    function initPeerConnection(roomID) {
+    function initPeerConnection(roomID, useAlternative) {
       const statusBox = document.getElementById('mp-player-list');
-      statusBox.innerText = "Connecting to local server (192.168.100.3)...";
+      statusBox.innerText = useAlternative ? "Connecting to community signaling server..." : "Connecting to official cloud server...";
 
       if (peer) peer.destroy();
 
-      // Connected directly to your local IP PeerJS server instance on port 9000
-      peer = new Peer(roomID, { host: '192.168.100.3', port: 9000, path: '/' });
+      const options = useAlternative ? { host: '0peer.net', port: 443, secure: true } : {};
+
+      peer = new Peer(roomID, options);
 
       peer.on('open', (id) => {
         isHost = true;
-        statusBox.innerText = `Host (${myPlayerName}) connected locally.\nWaiting for players...`;
+        statusBox.innerText = `Host (${myPlayerName}) connected.\nWaiting for players...`;
         document.getElementById('start-mp-btn').style.display = 'block';
-        writeLog(`Created Local Room successfully.`);
+        writeLog(`Created Room successfully.`);
       });
 
       peer.on('error', (err) => {
@@ -1147,8 +1148,15 @@
           statusBox.innerText = "Room found! Connecting to host...";
           const conn = peer.connect(roomID);
           setupConnection(conn);
+        } else if (err.type === 'network' || err.type === 'server-disconnected') {
+          if (useAlternative) {
+            // Automatically fallback to default 0.peerjs.com cloud server
+            initPeerConnection(roomID, false);
+          } else {
+            statusBox.innerText = "⚠️ Network Error: Public signaling servers are rate-limiting connections from your network IP. Try mobile data or use Single Player / Practice mode.";
+          }
         } else {
-          statusBox.innerText = "Local Connection Error: " + err.type + ". Make sure 'npx peerjs --port 9000' is running on 192.168.100.3!";
+          statusBox.innerText = "Connection Error: " + err.type;
         }
       });
 
