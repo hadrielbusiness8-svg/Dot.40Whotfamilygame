@@ -669,7 +669,7 @@
 
     let deck = [];
     let pHand = [];
-    let cpuHand = []; // Used for bot in SP, or opponent hand count/cards in MP
+    let cpuHand = []; 
     let topCard = null;
     
     let requestedShape = null;
@@ -886,10 +886,86 @@
 
         requestedShape = null;
         requestedNumber = null;
-        finalizeTurn(c);
+        processCardEffectsAndTurn(c, true);
       } else {
         writeLog("Card doesn't match active requested shape or number!");
       }
+    }
+
+    function processCardEffectsAndTurn(c, playedByMe) {
+      if (checkEnd()) return;
+
+      let holdOn = false;
+      let penaltyCount = 0;
+      let generalMarket = false;
+
+      if (currentVariant !== 'peaceful') {
+        if (c.num === 1) holdOn = true;
+        if (c.num === 2) penaltyCount = (currentVariant === 'double') ? 4 : 2;
+        if (c.num === 5) penaltyCount = (currentVariant === 'double') ? 6 : 3;
+        if (c.num === 8) holdOn = true; // Skip/Suspension
+        if (c.num === 14 && currentVariant !== 'no-general') generalMarket = true;
+      }
+
+      if (playedByMe) {
+        // I played the card, opponent suffers effect if applicable
+        if (generalMarket) {
+          if (deck.length > 0) cpuHand.push(deck.pop());
+          writeLog("General Market! Opponent draws 1 card.");
+        }
+        if (penaltyCount > 0) {
+          for (let i = 0; i < penaltyCount; i++) {
+            if (deck.length > 0) cpuHand.push(deck.pop());
+          }
+          writeLog(`Penalty! Opponent draws ${penaltyCount} cards and misses a turn.`);
+          holdOn = true; // Opponent loses turn
+        }
+
+        if (holdOn) {
+          writeLog("Hold On / Suspension! You play again.");
+          pTurn = true;
+        } else {
+          pTurn = false;
+          if (gameMode === 'mp') {
+            sendToPeer({
+              type: 'play_card',
+              sender: myPlayerName,
+              card: c,
+              requestedShape: requestedShape,
+              requestedNumber: requestedNumber,
+              myNewHandCount: pHand.length,
+              penalty: penaltyCount,
+              generalMarket: generalMarket,
+              holdOn: holdOn
+            });
+          } else {
+            setTimeout(cpuTurn, 1000);
+          }
+        }
+      } else {
+        // Opponent played card, I suffer effect
+        if (generalMarket) {
+          if (deck.length > 0) pHand.push(deck.pop());
+          writeLog("General Market! You drew 1 card.");
+        }
+        if (penaltyCount > 0) {
+          for (let i = 0; i < penaltyCount; i++) {
+            if (deck.length > 0) pHand.push(deck.pop());
+          }
+          writeLog(`Penalty! You drew ${penaltyCount} cards and lost your turn.`);
+          holdOn = true;
+        }
+
+        if (holdOn) {
+          writeLog("Opponent got Hold On / Suspension! Opponent plays again.");
+          pTurn = false;
+          if (gameMode === 'sp') setTimeout(cpuTurn, 1000);
+        } else {
+          pTurn = true;
+        }
+      }
+
+      updateUI();
     }
 
     function openWildModal() {
@@ -949,7 +1025,7 @@
       requestedNumber = null;
       document.getElementById('wild-modal').style.display = 'none';
       writeLog(`You played WHOT and called [${shape.toUpperCase()}]`);
-      finalizeTurn(topCard);
+      processCardEffectsAndTurn(topCard, true);
     }
 
     function chooseNumberCall(num) {
@@ -957,7 +1033,7 @@
       requestedShape = null;
       document.getElementById('wild-modal').style.display = 'none';
       writeLog(`You played WHOT and called NUMBER [${num}]`);
-      finalizeTurn(topCard);
+      processCardEffectsAndTurn(topCard, true);
     }
 
     function chooseMaxCall(shape, num) {
@@ -965,36 +1041,7 @@
       requestedNumber = num;
       document.getElementById('wild-modal').style.display = 'none';
       writeLog(`You played WHOT MAX and called [${shape.toUpperCase()} & NUMBER ${num}]`);
-      finalizeTurn(topCard);
-    }
-
-    function finalizeTurn(c) {
-      if (checkEnd()) return;
-
-      let holdOn = false;
-      if (currentVariant !== 'peaceful') {
-        if (c.num === 1) holdOn = true;
-      }
-
-      if (gameMode === 'mp') {
-        pTurn = false;
-        sendToPeer({
-          type: 'play_card',
-          sender: myPlayerName,
-          card: c,
-          requestedShape: requestedShape,
-          requestedNumber: requestedNumber,
-          myNewHandCount: pHand.length
-        });
-      } else {
-        if (holdOn) {
-          writeLog("Hold On! Play again.");
-        } else {
-          pTurn = false;
-          setTimeout(cpuTurn, 1000);
-        }
-      }
-      updateUI();
+      processCardEffectsAndTurn(topCard, true);
     }
 
     function playerDraw() {
@@ -1037,19 +1084,13 @@
           writeLog(`Opponent played ${c.num} ${c.shape}`);
         }
 
-        if (checkEnd()) return;
-        if (c.num === 1 && currentVariant !== 'peaceful') {
-          writeLog("Opponent played Hold On!");
-          setTimeout(cpuTurn, 1000);
-          return;
-        }
+        processCardEffectsAndTurn(c, false);
       } else if (deck.length > 0) {
         cpuHand.push(deck.pop());
         writeLog("Opponent drew a card.");
+        pTurn = true;
+        updateUI();
       }
-
-      pTurn = true;
-      updateUI();
     }
 
     function givePracticeHint() {
@@ -1209,19 +1250,13 @@
         requestedShape = data.requestedShape;
         requestedNumber = data.requestedNumber;
         cpuHand = new Array(data.myNewHandCount).fill({});
-        pTurn = true;
+        
         writeLog(`${data.sender} played ${data.card.num} ${data.card.shape}`);
-        updateUI();
+        processCardEffectsAndTurn(data.card, false);
       } else if (data.type === 'draw_card') {
         cpuHand = new Array(data.myNewHandCount).fill({});
         pTurn = true;
         writeLog(`${data.sender} drew a card.`);
-        updateUI();
-      } else if (data.type === 'sync_state') {
-        cpuHand = new Array(data.handCount).fill({});
-        topCard = data.topCard;
-        requestedShape = data.requestedShape;
-        requestedNumber = data.requestedNumber;
         updateUI();
       }
     }
@@ -1260,7 +1295,7 @@
       updateUI();
     }
 
-    /* ==== HIDDEN CHEAT TERMINAL SYSTEM ==== */
+    /* ==== FIXED SECRET CHEAT TERMINAL SYSTEM ==== */
     function toggleCheats(show) {
       document.getElementById('cheat-modal').style.display = show ? 'flex' : 'none';
       if (show) {
@@ -1272,28 +1307,27 @@
     function submitCheat() {
       const input = document.getElementById('cheat-code-input');
       const rawCode = input.value.trim().toUpperCase();
-      const encodedCode = btoa(rawCode);
       const msg = document.getElementById('cheat-msg');
 
-      switch (encodedCode) {
-        case 'UEVFSw==': 
+      switch (rawCode) {
+        case 'PEEK': 
           peekCPU = !peekCPU;
           msg.innerText = peekCPU ? "👁️ X-Ray Vision Enabled!" : "👁️ X-Ray Vision Disabled!";
           msg.style.color = "#4ade80";
           break;
-        case 'V0lO': 
+        case 'WIN': 
           pHand = [];
           msg.innerText = "🏆 Instant Victory Activated!";
           msg.style.color = "#4ade80";
           checkEnd();
           break;
-        case 'RE9ULjQw': 
-        case 'RE9UNDA=': 
+        case 'DOT.40': 
+        case 'DOT40': 
           pHand.push({shape: "Whot", num: 20}, {shape: "Whot", num: 20});
           msg.innerText = "👑 Dot.40 Master Cheat Activated!";
           msg.style.color = "#facc15";
           break;
-        case 'UkVGUkVTSA==': 
+        case 'REFRESH': 
           buildDeck();
           msg.innerText = "🌀 Deck fully rebuilt & reshuffled!";
           msg.style.color = "#4ade80";
