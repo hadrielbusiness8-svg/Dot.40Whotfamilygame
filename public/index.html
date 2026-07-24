@@ -650,7 +650,7 @@
     </div>
   </div>
 
-  <!-- SECRET CHEAT TERMINAL (UI HIDDEN) -->
+  <!-- SECRET CHEAT TERMINAL -->
   <div class="modal" id="cheat-modal">
     <div class="modal-box" style="border-color: #dc2626;">
       <h3 style="color: #ef4444; text-align: center;">🔒 SECRET CHEAT TERMINAL</h3>
@@ -754,7 +754,7 @@
       if (gameMode === 'pr') {
         document.getElementById('tutorial-text').innerText = variantLessons[currentVariant];
       }
-      initGame();
+      if (gameMode !== 'mp') initGame();
     }
 
     function changeMode(m) {
@@ -778,9 +778,11 @@
         document.getElementById('opp-icon').innerText = "🤖";
         initGame();
       } else if (m === 'mp') {
-        setTurnPill("Enter Room Details...", "#facc15");
+        setTurnPill("Lobby Setup...", "#facc15");
         pHand = []; cpuHand = []; topCard = null; 
         requestedShape = null; requestedNumber = null;
+        document.getElementById('player-count').innerText = "Waiting to start...";
+        document.getElementById('opp-count').innerText = "Waiting to start...";
         updateUI();
       }
     }
@@ -832,7 +834,9 @@
         div.onclick = () => playCard(idx);
         pRack.appendChild(div);
       });
-      document.getElementById('player-count').innerText = `${pHand.length} cards remaining`;
+      if (gameMode !== 'mp' || pHand.length > 0) {
+        document.getElementById('player-count').innerText = `${pHand.length} cards remaining`;
+      }
 
       const cpuRack = document.getElementById('opp-rack');
       cpuRack.innerHTML = '';
@@ -846,7 +850,9 @@
         }
         cpuRack.appendChild(div);
       });
-      document.getElementById('opp-count').innerText = `${cpuHand.length} cards remaining`;
+      if (gameMode !== 'mp' || cpuHand.length > 0) {
+        document.getElementById('opp-count').innerText = `${cpuHand.length} cards remaining`;
+      }
 
       if (gameMode === 'pr' && pTurn) givePracticeHint();
     }
@@ -1112,7 +1118,7 @@
       box.scrollTop = box.scrollHeight;
     }
 
-    /* ==== RENDER SERVER MULTIPLAYER CONNECTION ==== */
+    /* ==== ROBUST RENDER SERVER MULTIPLAYER CONNECTION ==== */
     function startRoomConnection() {
       const nameInput = document.getElementById('mp-name').value.trim();
       const roomInput = document.getElementById('mp-room').value.trim();
@@ -1127,11 +1133,11 @@
 
     function initPeerConnection(roomID) {
       const statusBox = document.getElementById('mp-player-list');
-      statusBox.innerText = "Connecting to Dot.40 Render server...";
+      statusBox.innerText = "Attempting to host room...";
 
       if (peer) peer.destroy();
 
-      // Configured to connect directly to your same-origin Render server instance securely
+      // Step 1: Try creating the peer taking the room ID (Host role)
       peer = new Peer(roomID, {
         host: window.location.hostname,
         port: 443,
@@ -1141,17 +1147,35 @@
        
       peer.on('open', (id) => {
         isHost = true;
-        statusBox.innerText = `Host (${myPlayerName}) connected.\nWaiting for players...`;
+        statusBox.innerText = `Host (${myPlayerName}) connected.\nWaiting for players to join...`;
         document.getElementById('start-mp-btn').style.display = 'block';
         writeLog(`Created Room successfully.`);
       });
 
       peer.on('error', (err) => {
         if (err.type === 'unavailable-id') {
+          // Step 2: Room ID already taken! Join as Client instead.
+          statusBox.innerText = "Room active! Connecting as client...";
           isHost = false;
-          statusBox.innerText = "Room found! Connecting to host...";
-          const conn = peer.connect(roomID);
-          setupConnection(conn);
+          document.getElementById('start-mp-btn').style.display = 'none';
+
+          if (peer) peer.destroy();
+          peer = new Peer({
+            host: window.location.hostname,
+            port: 443,
+            path: '/peerjs',
+            secure: true
+          });
+
+          peer.on('open', (id) => {
+            const conn = peer.connect(roomID);
+            setupConnection(conn);
+            statusBox.innerText = "Connected to Host successfully!";
+          });
+
+          peer.on('error', (e) => {
+            statusBox.innerText = "Client Connection Error: " + e.type;
+          });
         } else {
           statusBox.innerText = "Connection Error: " + err.type;
         }
@@ -1165,7 +1189,7 @@
     function setupConnection(conn) {
       connections.push(conn);
       conn.on('open', () => {
-        writeLog("Player connected!");
+        writeLog("Connection established!");
         conn.send({ type: 'join', name: myPlayerName });
       });
 
