@@ -653,7 +653,7 @@
   <!-- SECRET CHEAT TERMINAL -->
   <div class="modal" id="cheat-modal">
     <div class="modal-box" style="border-color: #dc2626;">
-      <h3 style="color: #ef4444; text-align: center;">🔒 SECRET CHEAT TERMINAL</h3>
+      <h3 style="color: #ef4444; text-align: center;">🔒 SECRET CHEAT TERMINAL (10 CODES)</h3>
       <input type="text" class="cheat-input" id="cheat-code-input" placeholder="ENTER CHEAT CODE..." onkeydown="if(event.key==='Enter') submitCheat()">
       <div class="cheat-msg" id="cheat-msg">Type a secret code & hit Enter</div>
       
@@ -908,7 +908,6 @@
       }
 
       if (playedByMe) {
-        // I played the card, opponent suffers effect if applicable
         if (generalMarket) {
           if (deck.length > 0) cpuHand.push(deck.pop());
           writeLog("General Market! Opponent draws 1 card.");
@@ -918,7 +917,7 @@
             if (deck.length > 0) cpuHand.push(deck.pop());
           }
           writeLog(`Penalty! Opponent draws ${penaltyCount} cards and misses a turn.`);
-          holdOn = true; // Opponent loses turn
+          holdOn = true;
         }
 
         if (holdOn) {
@@ -943,7 +942,6 @@
           }
         }
       } else {
-        // Opponent played card, I suffer effect
         if (generalMarket) {
           if (deck.length > 0) pHand.push(deck.pop());
           writeLog("General Market! You drew 1 card.");
@@ -1276,7 +1274,7 @@
 
       pHand = hostHand;
       cpuHand = new Array(clientHand.length).fill({});
-      pTurn = true; // Host starts
+      pTurn = true;
 
       opponentName = document.getElementById('opp-label').innerText !== "Opponent" ? document.getElementById('opp-label').innerText : "Brother";
 
@@ -1295,12 +1293,12 @@
       updateUI();
     }
 
-    /* ==== FIXED SECRET CHEAT TERMINAL SYSTEM ==== */
+    /* ==== FULL 10-CHEAT TERMINAL SYSTEM ==== */
     function toggleCheats(show) {
       document.getElementById('cheat-modal').style.display = show ? 'flex' : 'none';
       if (show) {
         document.getElementById('cheat-code-input').value = '';
-        document.getElementById('cheat-msg').innerText = 'Type a secret code & hit Enter';
+        document.getElementById('cheat-msg').innerText = 'Type one of 10 secret codes & hit Enter';
       }
     }
 
@@ -1312,28 +1310,59 @@
       switch (rawCode) {
         case 'PEEK': 
           peekCPU = !peekCPU;
-          msg.innerText = peekCPU ? "👁️ X-Ray Vision Enabled!" : "👁️ X-Ray Vision Disabled!";
+          msg.innerText = peekCPU ? "👁️ 1. PEEK: X-Ray Vision Enabled!" : "👁️ PEEK Disabled!";
           msg.style.color = "#4ade80";
           break;
         case 'WIN': 
           pHand = [];
-          msg.innerText = "🏆 Instant Victory Activated!";
+          msg.innerText = "🏆 2. WIN: Instant Victory Activated!";
           msg.style.color = "#4ade80";
           checkEnd();
           break;
         case 'DOT.40': 
         case 'DOT40': 
           pHand.push({shape: "Whot", num: 20}, {shape: "Whot", num: 20});
-          msg.innerText = "👑 Dot.40 Master Cheat Activated!";
+          msg.innerText = "👑 3. DOT.40: Two Whot cards added!";
           msg.style.color = "#facc15";
           break;
         case 'REFRESH': 
           buildDeck();
-          msg.innerText = "🌀 Deck fully rebuilt & reshuffled!";
+          msg.innerText = "🌀 4. REFRESH: Deck fully rebuilt & reshuffled!";
           msg.style.color = "#4ade80";
           break;
+        case 'DRAW2':
+          for(let i=0; i<2; i++) if(deck.length>0) cpuHand.push(deck.pop());
+          msg.innerText = "🎯 5. DRAW2: Opponent forced to draw 2 cards!";
+          msg.style.color = "#4ade80";
+          break;
+        case 'SHUFFLE':
+          pHand.sort(() => Math.random() - 0.5);
+          msg.innerText = "🔀 6. SHUFFLE: Your hand was randomly rearranged!";
+          msg.style.color = "#4ade80";
+          break;
+        case 'CLEAR':
+          requestedShape = null;
+          requestedNumber = null;
+          msg.innerText = "🧹 7. CLEAR: Active shape/number restrictions lifted!";
+          msg.style.color = "#4ade80";
+          break;
+        case 'HAND5':
+          for(let i=0; i<5; i++) if(deck.length>0) pHand.push(deck.pop());
+          msg.innerText = "🃏 8. HAND5: Added 5 bonus cards to your hand!";
+          msg.style.color = "#4ade80";
+          break;
+        case 'SKIP':
+          pTurn = !pTurn;
+          msg.innerText = "⏭️ 9. SKIP: Turn manually passed!";
+          msg.style.color = "#4ade80";
+          break;
+        case 'OPP5':
+          for(let i=0; i<5; i++) if(deck.length>0) cpuHand.push(deck.pop());
+          msg.innerText = "🔥 10. OPP5: Heavy strike! Opponent draws 5 cards!";
+          msg.style.color = "#f87171";
+          break;
         default:
-          msg.innerText = "❌ INVALID CHEAT CODE!";
+          msg.innerText = "❌ INVALID CHEAT CODE! Try PEEK, WIN, DOT.40, REFRESH, DRAW2, SHUFFLE, CLEAR, HAND5, SKIP, or OPP5";
           msg.style.color = "#f87171";
           return;
       }
