@@ -1,8 +1,6 @@
 {
-  "name": "dot40-whot-server",
+  "name": "dot-40-whot-server",
   "version": "1.0.0",
-  "description": "PeerJS signaling server for Dot.40 Whot",
-  "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
