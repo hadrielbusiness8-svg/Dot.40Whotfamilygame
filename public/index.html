@@ -1139,11 +1139,11 @@
       peer.on('error', (err) => {
         if (err.type === 'unavailable-id') {
           isHost = false;
-          peer = new Peer();
-          peer.on('open', () => {
-            const conn = peer.connect(roomID);
-            setupConnection(conn);
-          });
+          peer = new Peer(roomID, {
+  host: '0peer.net', // Alternative reliable PeerJS community server
+  port: 443,
+  secure: true
+});
         } else {
           alert("Connection Error: " + err.type);
         }
