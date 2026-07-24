@@ -521,26 +521,6 @@
       min-height: 16px;
       color: #94a3b8;
     }
-
-    .cheat-code-list {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 8px;
-      font-size: 10px;
-      color: #94a3b8;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4px;
-      max-height: 100px;
-      overflow-y: auto;
-    }
-
-    .cheat-code-item {
-      cursor: pointer;
-      color: #38bdf8;
-    }
-    .cheat-code-item:hover { text-decoration: underline; color: #facc15; }
   </style>
 </head>
 <body>
@@ -669,26 +649,13 @@
     </div>
   </div>
 
-  <!-- CHEATS TERMINAL MODAL WITH ALL 10 CODES -->
+  <!-- SECRET CHEAT TERMINAL (UI HIDDEN) -->
   <div class="modal" id="cheat-modal">
     <div class="modal-box" style="border-color: #dc2626;">
       <h3 style="color: #ef4444; text-align: center;">🔒 SECRET CHEAT TERMINAL</h3>
       <input type="text" class="cheat-input" id="cheat-code-input" placeholder="ENTER CHEAT CODE..." onkeydown="if(event.key==='Enter') submitCheat()">
-      <div class="cheat-msg" id="cheat-msg">Click any code below or type & hit Enter</div>
+      <div class="cheat-msg" id="cheat-msg">Type a secret code & hit Enter</div>
       
-      <div class="cheat-code-list">
-        <div class="cheat-code-item" onclick="applyCheatDirect('PEEK')">1. PEEK (X-Ray)</div>
-        <div class="cheat-code-item" onclick="applyCheatDirect('WIN')">2. WIN (Auto-Win)</div>
-        <div class="cheat-code-item" onclick="applyCheatDirect('DOT.40')">3. DOT.40 (Master)</div>
-        <div class="cheat-code-item" onclick="applyCheatDirect('NUKE')">4. NUKE (CPU +8)</div>
-        <div class="cheat-code-item" onclick="applyCheatDirect('ALLWHOT')">5. ALLWHOT (Hand=20)</div>
-        <div class="cheat-code-item" onclick="applyCheatDirect('SWAP')">6. SWAP (Swap Hands)</div>
-        <div class="cheat-code-item" onclick="applyCheatDirect('STEAL')">7. STEAL (Take 1)</div>
-        <div class="cheat-code-item" onclick="applyCheatDirect('SKIP')">8. SKIP (Extra Turn)</div>
-        <div class="cheat-code-item" onclick="applyCheatDirect('REFRESH')">9. REFRESH (Reshuffle)</div>
-        <div class="cheat-code-item" onclick="applyCheatDirect('SHIELD')">10. SHIELD (Immunity)</div>
-      </div>
-
       <button class="nav-btn btn-cheat" style="padding: 8px;" onclick="submitCheat()">Activate Cheat</button>
       <button class="nav-btn" style="background: #334155; border-color: #475569;" onclick="toggleCheats(false)">Close</button>
     </div>
@@ -1236,60 +1203,58 @@
       initGame();
     }
 
-    /* ==== 10 SECRET CHEATS TERMINAL SYSTEM ==== */
+    /* ==== HIDDEN 10 SECRET CHEATS TERMINAL SYSTEM ==== */
     function toggleCheats(show) {
       document.getElementById('cheat-modal').style.display = show ? 'flex' : 'none';
       if (show) {
         document.getElementById('cheat-code-input').value = '';
-        document.getElementById('cheat-msg').innerText = 'Click any code below or type & hit Enter';
+        document.getElementById('cheat-msg').innerText = 'Type a secret code & hit Enter';
       }
-    }
-
-    function applyCheatDirect(code) {
-      document.getElementById('cheat-code-input').value = code;
-      submitCheat();
     }
 
     function submitCheat() {
       const input = document.getElementById('cheat-code-input');
-      const code = input.value.trim().toUpperCase();
+      const rawCode = input.value.trim().toUpperCase();
+      
+      // Convert the input to Base64 to compare against the hashed secrets
+      const encodedCode = btoa(rawCode);
       const msg = document.getElementById('cheat-msg');
 
-      switch (code) {
-        case 'PEEK':
+      switch (encodedCode) {
+        case 'UEVFSw==': // Hashed 'PEEK'
           peekCPU = !peekCPU;
           msg.innerText = peekCPU ? "👁️ X-Ray Vision Enabled!" : "👁️ X-Ray Vision Disabled!";
           msg.style.color = "#4ade80";
           break;
 
-        case 'WIN':
+        case 'V0lO': // Hashed 'WIN'
           pHand = [];
           msg.innerText = "🏆 Instant Victory Activated!";
           msg.style.color = "#4ade80";
           checkEnd();
           break;
 
-        case 'DOT.40':
-        case 'DOT40':
+        case 'RE9ULjQw': // Hashed 'DOT.40'
+        case 'RE9UNDA=': // Hashed 'DOT40'
           cpuHand = [deck.pop() || {shape: "Circle", num: 1}];
           pHand.push({shape: "Whot", num: 20}, {shape: "Whot", num: 20});
           msg.innerText = "👑 Dot.40 Master Cheat Activated!";
           msg.style.color = "#facc15";
           break;
 
-        case 'NUKE':
+        case 'TlVLRQ==': // Hashed 'NUKE'
           for(let i = 0; i < 8; i++) if(deck.length) cpuHand.push(deck.pop());
           msg.innerText = "💣 Opponent forced to draw 8 cards!";
           msg.style.color = "#ef4444";
           break;
 
-        case 'ALLWHOT':
+        case 'QUxMV0hPVA==': // Hashed 'ALLWHOT'
           pHand = pHand.map(() => ({shape: "Whot", num: 20}));
           msg.innerText = "🃏 All cards converted to WHOT!";
           msg.style.color = "#4ade80";
           break;
 
-        case 'SWAP':
+        case 'U1dBUA==': // Hashed 'SWAP'
           let temp = pHand;
           pHand = cpuHand;
           cpuHand = temp;
@@ -1297,7 +1262,7 @@
           msg.style.color = "#38bdf8";
           break;
 
-        case 'STEAL':
+        case 'U1RFQUw=': // Hashed 'STEAL'
           if (cpuHand.length > 0) {
             pHand.push(cpuHand.pop());
             msg.innerText = "🥷 Stole 1 card from opponent!";
@@ -1308,19 +1273,19 @@
           }
           break;
 
-        case 'SKIP':
+        case 'U0tJUA==': // Hashed 'SKIP'
           pTurn = true;
           msg.innerText = "⚡ Opponent turn skipped! You play again.";
           msg.style.color = "#facc15";
           break;
 
-        case 'REFRESH':
+        case 'UkVGUkVTSA==': // Hashed 'REFRESH'
           buildDeck();
           msg.innerText = "🌀 Deck fully rebuilt & reshuffled!";
           msg.style.color = "#4ade80";
           break;
 
-        case 'SHIELD':
+        case 'U0hJRUxE': // Hashed 'SHIELD'
           requestedShape = null;
           requestedNumber = null;
           msg.innerText = "🛡️ Immunity Shield Active! Board cleared.";
