@@ -684,7 +684,6 @@
     // Multiplayer Variables (2-4 Players)
     let peer = null;
     let connections = [];
-    let roomPlayers = [];
     let isHost = false;
     let myPlayerName = "Player 1";
 
@@ -703,7 +702,7 @@
     /* ==== SPEECH SYNTHESIS ENGINE ==== */
     function speakText(text) {
       if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Stop any currently speaking audio
+        window.speechSynthesis.cancel();
         const cleanMsg = text.replace(/[\*\_\#]/g, '');
         const utterance = new SpeechSynthesisUtterance(cleanMsg);
         utterance.rate = 1.0;
@@ -737,10 +736,9 @@
       pHand = deck.splice(0, 5);
       cpuHand = deck.splice(0, 5);
       
-      // Ensure starting topCard is NOT a special card (1, 2, 5, 8, 14, 20)
       topCard = deck.pop();
       while (isSpecialCard(topCard) && deck.length > 0) {
-        deck.unshift(topCard); // recycle to bottom of deck
+        deck.unshift(topCard);
         topCard = deck.pop();
       }
 
@@ -989,6 +987,16 @@
         }
       }
 
+      if (gameMode === 'mp') {
+        broadcastData({
+          type: 'play_card',
+          sender: myPlayerName,
+          card: c,
+          requestedShape: requestedShape,
+          requestedNumber: requestedNumber
+        });
+      }
+
       if (holdOn) {
         writeLog("Hold On! Play again.");
       } else {
@@ -1090,174 +1098,147 @@
       if (!text) return;
 
       appendChatMessage(myPlayerName, text);
-      broadcastData({ type: 'chat', sender: myPlayerName, text: text });
+      broadcastData({ type: 'chat', sender: myPlayerName, message: text });
       input.value = '';
     }
 
-    function sendEmoji(emoji) {
-      appendChatMessage(myPlayerName, emoji);
-      broadcastData({ type: 'chat', sender: myPlayerName, text: emoji });
+    function sendEmoji(e) {
+      appendChatMessage(myPlayerName, e);
+      broadcastData({ type: 'chat', sender: myPlayerName, message: e });
     }
 
-    function appendChatMessage(sender, text) {
+    function appendChatMessage(sender, msg) {
       const box = document.getElementById('chat-messages');
-      const item = document.createElement('div');
-      item.className = 'chat-msg-item';
-      item.innerHTML = `<strong>${sender}:</strong> ${text}`;
-      box.appendChild(item);
+      const div = document.createElement('div');
+      div.className = 'chat-msg-item';
+      div.innerHTML = `<strong>${sender}:</strong> ${msg}`;
+      box.appendChild(div);
       box.scrollTop = box.scrollHeight;
     }
 
-    function broadcastData(data) {
-      connections.forEach(c => c.send(data));
-    }
-
-    /* ==== MULTIPLAYER LOBBY CONNECTION (2 to 4 PLAYERS) ==== */
+    /* ==== PEERJS MULTIPLAYER SYSTEM ==== */
     function joinRoom() {
-      myPlayerName = document.getElementById('mp-name').value || "Player";
-      const roomNum = document.getElementById('mp-room').value || "1";
-      const roomId = "dot40-whot-room-" + roomNum;
+      const nameInput = document.getElementById('mp-name').value.trim();
+      const roomInput = document.getElementById('mp-room').value.trim();
+      if (!nameInput || !roomInput) return alert("Please enter name and room number.");
 
-      setTurnPill("Connecting to Lobby...", "#facc15");
-      peer = new Peer();
+      myPlayerName = nameInput;
+      document.getElementById('player-label').innerText = myPlayerName;
+
+      const roomID = `dot40-whot-room-${roomInput}`;
+      peer = new Peer(roomID);
 
       peer.on('open', (id) => {
-        const conn = peer.connect(roomId);
-        
-        conn.on('open', () => {
-          isHost = false;
-          connections = [conn];
-          setupConnection(conn);
-          setTurnPill("Connected in Room", "#34d399");
-          writeLog("Joined multiplayer lobby.");
-          document.getElementById('player-label').innerText = myPlayerName;
-          conn.send({ type: 'join', name: myPlayerName });
-        });
-
-        conn.on('error', () => becomeHost(roomId));
-        
-        setTimeout(() => {
-          if (connections.length === 0) becomeHost(roomId);
-        }, 2000);
-      });
-    }
-
-    function becomeHost(roomId) {
-      if (peer) peer.destroy();
-      peer = new Peer(roomId);
-
-      peer.on('open', () => {
         isHost = true;
-        connections = [];
-        roomPlayers = [myPlayerName];
-        setTurnPill("Hosting Room...", "#3b82f6");
-        writeLog(`Created Room ${roomId.replace('dot40-whot-room-', '')}. Waiting for 2-4 players...`);
-        document.getElementById('player-label').innerText = myPlayerName;
+        document.getElementById('mp-player-list').innerText = `Host (${myPlayerName}) connected.\nWaiting for players...`;
         document.getElementById('start-mp-btn').style.display = 'block';
-        updateLobbyUI();
+        writeLog(`Created Room #${roomInput} as Host.`);
+      });
+
+      peer.on('error', (err) => {
+        if (err.type === 'unavailable-id') {
+          isHost = false;
+          peer = new Peer();
+          peer.on('open', () => {
+            const conn = peer.connect(roomID);
+            setupConnection(conn);
+          });
+        } else {
+          alert("Connection Error: " + err.type);
+        }
       });
 
       peer.on('connection', (conn) => {
-        if (connections.length >= 3) { // Max 4 players (1 host + 3 clients)
-          conn.close();
-          return;
-        }
-
-        conn.on('open', () => {
-          connections.push(conn);
-          setupConnection(conn);
-        });
+        setupConnection(conn);
       });
     }
 
     function setupConnection(conn) {
+      connections.push(conn);
+      conn.on('open', () => {
+        writeLog("Player connected!");
+        conn.send({ type: 'join', name: myPlayerName });
+      });
+
       conn.on('data', (data) => {
-        if (data.type === 'join' && isHost) {
-          roomPlayers.push(data.name);
-          writeLog(`${data.name} joined the room!`);
-          updateLobbyUI();
-          broadcastData({ type: 'lobby_update', players: roomPlayers, variant: document.getElementById('whot-variant').value });
-        } else if (data.type === 'lobby_update' && !isHost) {
-          roomPlayers = data.players;
-          document.getElementById('whot-variant').value = data.variant;
-          currentVariant = data.variant;
-          updateLobbyUI();
-        } else if (data.type === 'chat') {
-          appendChatMessage(data.sender, data.text);
-        } else if (data.type === 'start_game') {
-          document.getElementById('mp-lobby').style.display = 'none';
-          writeLog("Multiplayer match started!");
-        }
+        handleNetworkData(data, conn);
       });
 
       conn.on('close', () => {
+        connections = connections.filter(c => c !== conn);
         writeLog("A player disconnected.");
       });
     }
 
-    function updateLobbyUI() {
-      const box = document.getElementById('mp-player-list');
-      box.innerHTML = `<strong>Players (${roomPlayers.length}/4):</strong><br>` + roomPlayers.map((p, i) => `${i + 1}. ${p}`).join('<br>');
-      
-      const startBtn = document.getElementById('start-mp-btn');
-      if (isHost) {
-        startBtn.disabled = !(roomPlayers.length >= 2 && roomPlayers.length <= 4);
-        startBtn.style.opacity = startBtn.disabled ? "0.5" : "1";
+    function broadcastData(data) {
+      connections.forEach(conn => {
+        if (conn.open) conn.send(data);
+      });
+    }
+
+    function handleNetworkData(data, conn) {
+      if (data.type === 'chat') {
+        appendChatMessage(data.sender, data.message);
+      } else if (data.type === 'join') {
+        document.getElementById('mp-player-list').innerText += `\nJoined: ${data.name}`;
+      } else if (data.type === 'game_start') {
+        document.getElementById('mp-lobby').style.display = 'none';
+        writeLog("Multiplayer match started!");
+        initGame();
+      } else if (data.type === 'play_card') {
+        topCard = data.card;
+        requestedShape = data.requestedShape;
+        requestedNumber = data.requestedNumber;
+        pTurn = true;
+        writeLog(`${data.sender} played ${data.card.num} ${data.card.shape}`);
+        updateUI();
       }
     }
 
     function startMultiplayerGame() {
-      if (roomPlayers.length < 2 || roomPlayers.length > 4) {
-        return writeLog("Needs between 2 and 4 players to start!");
-      }
-      broadcastData({ type: 'start_game' });
+      if (!isHost) return;
+      broadcastData({ type: 'game_start' });
       document.getElementById('mp-lobby').style.display = 'none';
       initGame();
-      writeLog("Multiplayer game started!");
     }
 
-    /* ==== CHEAT TERMINAL CONTROLS ==== */
+    /* ==== CHEATS TERMINAL SYSTEM ==== */
     function toggleCheats(show) {
-      const modal = document.getElementById('cheat-modal');
-      modal.style.display = show ? 'flex' : 'none';
-      
-      if(show) {
-        document.getElementById('cheat-code-input').value = "";
-        document.getElementById('cheat-msg').innerText = "Type secret code and press Enter";
-        document.getElementById('cheat-msg').style.color = "#94a3b8";
-        document.getElementById('cheat-code-input').focus();
+      document.getElementById('cheat-modal').style.display = show ? 'flex' : 'none';
+      if (show) {
+        document.getElementById('cheat-code-input').value = '';
+        document.getElementById('cheat-msg').innerText = 'Type secret code and press Enter';
       }
     }
 
     function submitCheat() {
-      const input = document.getElementById('cheat-code-input').value.toUpperCase().trim();
+      const input = document.getElementById('cheat-code-input');
+      const code = input.value.trim().toUpperCase();
       const msg = document.getElementById('cheat-msg');
-      
-      if (input === "PEEK") {
+
+      if (code === 'PEEK') {
         peekCPU = !peekCPU;
-        msg.innerText = peekCPU ? "👀 X-RAY VISION ACTIVATED!" : "X-RAY VISION DEACTIVATED.";
+        msg.innerText = peekCPU ? "X-Ray Vision Activated!" : "X-Ray Vision Deactivated!";
         msg.style.color = "#4ade80";
         updateUI();
-      } else if (input === "WIN") {
-        if (pHand.length > 1) pHand.length = 1;
-        msg.innerText = "🏆 ONE CARD LEFT!";
+      } else if (code === 'WIN') {
+        pHand = [];
+        msg.innerText = "Instant Victory Triggered!";
+        msg.style.color = "#4ade80";
+        checkEnd();
+      } else if (code === 'DOT.40' || code === 'DOT40') {
+        msg.innerText = "Dot.40 Master Cheat: Cleared Opponent Hand!";
         msg.style.color = "#facc15";
+        cpuHand = [deck.pop()];
         updateUI();
       } else {
-        msg.innerText = "❌ INVALID CHEAT CODE!";
-        msg.style.color = "#ef4444";
+        msg.innerText = "INVALID CHEAT CODE!";
+        msg.style.color = "#f87171";
       }
-      
-      setTimeout(() => {
-        if (document.getElementById('cheat-modal').style.display === 'flex') {
-          toggleCheats(false);
-        }
-      }, 1500);
     }
 
-    window.onload = () => {
-      changeMode('sp');
-    };
+    // Initialize Game State
+    initGame();
   </script>
 </body>
 </html>
