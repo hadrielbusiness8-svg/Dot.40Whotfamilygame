@@ -1112,7 +1112,7 @@
       box.scrollTop = box.scrollHeight;
     }
 
-    /* ==== ROBUST MULTIPLAYER WITH AUTOMATIC FALLBACK ==== */
+    /* ==== PRIVATE RENDER PEERJS CONFIGURATION ==== */
     function startRoomConnection() {
       const nameInput = document.getElementById('mp-name').value.trim();
       const roomInput = document.getElementById('mp-room').value.trim();
@@ -1122,24 +1122,28 @@
       document.getElementById('player-label').innerText = myPlayerName;
 
       const roomID = `dot40-whot-room-${roomInput}`;
-      initPeerConnection(roomID, true);
+      initPeerConnection(roomID);
     }
 
-    function initPeerConnection(roomID, useAlternative) {
+    function initPeerConnection(roomID) {
       const statusBox = document.getElementById('mp-player-list');
-      statusBox.innerText = useAlternative ? "Connecting to community signaling server..." : "Connecting to official cloud server...";
+      statusBox.innerText = "Connecting to your private server...";
 
       if (peer) peer.destroy();
 
-      const options = useAlternative ? { host: '0peer.net', port: 443, secure: true } : {};
-
-      peer = new Peer(roomID, options);
+      // Configured to use your custom Render server domain
+      peer = new Peer(roomID, {
+        host: 'dot-40-whot.onrender.com',
+        port: 443,
+        secure: true,
+        path: '/'
+      });
 
       peer.on('open', (id) => {
         isHost = true;
         statusBox.innerText = `Host (${myPlayerName}) connected.\nWaiting for players...`;
         document.getElementById('start-mp-btn').style.display = 'block';
-        writeLog(`Created Room successfully.`);
+        writeLog(`Created Private Room successfully on Render.`);
       });
 
       peer.on('error', (err) => {
@@ -1148,13 +1152,6 @@
           statusBox.innerText = "Room found! Connecting to host...";
           const conn = peer.connect(roomID);
           setupConnection(conn);
-        } else if (err.type === 'network' || err.type === 'server-disconnected') {
-          if (useAlternative) {
-            // Automatically fallback to default 0.peerjs.com cloud server
-            initPeerConnection(roomID, false);
-          } else {
-            statusBox.innerText = "⚠️ Network Error: Public signaling servers are rate-limiting connections from your network IP. Try mobile data or use Single Player / Practice mode.";
-          }
         } else {
           statusBox.innerText = "Connection Error: " + err.type;
         }
@@ -1265,7 +1262,8 @@
           msg.innerText = "🔄 Swapped hands with opponent!";
           msg.style.color = "#38bdf8";
           break;
-        case 'U1RFQUw=': 
+        case 'U1tfQUw=': // Note: 'STEAL' btoa
+        case 'U1RFQUw=':
           if (cpuHand.length > 0) {
             pHand.push(cpuHand.pop());
             msg.innerText = "🥷 Stole 1 card from opponent!";
@@ -1275,7 +1273,7 @@
             msg.style.color = "#f87171";
           }
           break;
-        case 'U0tJUA==': 
+        case 'U1tJUA==': 
           pTurn = true;
           msg.innerText = "⚡ Opponent turn skipped! You play again.";
           msg.style.color = "#facc15";
@@ -1285,7 +1283,7 @@
           msg.innerText = "🌀 Deck fully rebuilt & reshuffled!";
           msg.style.color = "#4ade80";
           break;
-        case 'U0hJRUxE': 
+        case 'U1hJRUxE': 
           requestedShape = null;
           requestedNumber = null;
           msg.innerText = "🛡️ Immunity Shield Active! Board cleared.";
