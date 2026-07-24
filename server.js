@@ -3,19 +3,20 @@ const { ExpressPeerServer } = require('peer');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 9000;
+const PORT = process.env.PORT || 3000;
 
-// Serve your single-file HTML game interface
-app.use(express.static(path.join(__dirname, 'public'))); 
-// Make sure your index.html is inside a folder named 'public'
+// 1. Serve your single-file HTML Whot game from the 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 const server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Dot.40 Whot Server running on port ${PORT}`);
 });
 
-// Mount the PeerJS server on a sub-route so it doesn't overwrite your game UI
+// 2. Configure the PeerJS signaling server
 const peerServer = ExpressPeerServer(server, {
-    debug: true
+    debug: true,
+    path: 'dot-40-whot.onrender.com/peerjs', 
 });
 
+// 3. Mount the PeerJS server to the /peerjs route
 app.use('/peerjs', peerServer);
