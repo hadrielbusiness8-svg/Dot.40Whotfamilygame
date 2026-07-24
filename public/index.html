@@ -100,8 +100,8 @@
       display: none;
       background: #1e3a29;
       border-bottom: 2px solid #facc15;
-      padding: 6px 12px;
-      font-size: 11px;
+      padding: 8px 12px;
+      font-size: 12px;
       color: #86efac;
       text-align: center;
     }
@@ -134,7 +134,7 @@
       z-index: 50;
       flex-direction: column;
       gap: 12px;
-      width: 300px;
+      width: 320px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.6);
       text-align: center;
     }
@@ -154,7 +154,19 @@
       width: 100%;
     }
 
-    /* MULTIPLAYER CHAT PANEL (ONLY FOR MULTIPLAYER) */
+    .player-list-box {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 11px;
+      color: #38bdf8;
+      text-align: left;
+      max-height: 80px;
+      overflow-y: auto;
+    }
+
+    /* MULTIPLAYER CHAT PANEL */
     .chat-box {
       display: none;
       position: absolute;
@@ -288,17 +300,17 @@
     .badge-opp { align-self: flex-start; }
     .badge-self { align-self: flex-end; }
 
-    /* CARD RACKS (MOBILE FRIENDLY FLEX-WRAP) */
+    /* CARD RACKS */
     .rack {
       display: flex;
-      flex-wrap: wrap; /* CONTINUES DOWN IF YOU HAVE TOO MANY CARDS */
+      flex-wrap: wrap;
       justify-content: center;
       align-items: center;
       margin: 0 auto;
       padding: 6px;
       min-height: 120px;
       max-height: 170px;
-      overflow-y: auto; /* SCROLLABLE FOR MOBILE PHONES */
+      overflow-y: auto;
       gap: 6px;
       width: 100%;
       max-width: 600px;
@@ -307,12 +319,24 @@
     .rack .card {
       margin-left: 0;
       flex-shrink: 0;
-      transition: transform 0.2s;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
 
     .rack .card:hover {
       transform: translateY(-8px);
       z-index: 10;
+    }
+
+    /* PLAYABLE CARD HINT IN PRACTICE MODE */
+    .card.playable-hint {
+      border: 3px solid #facc15 !important;
+      box-shadow: 0 0 12px #facc15 !important;
+      animation: hintGlow 1.2s infinite alternate;
+    }
+
+    @keyframes hintGlow {
+      from { transform: scale(1); }
+      to { transform: scale(1.08); }
     }
 
     /* CENTER AREA */
@@ -416,13 +440,13 @@
       position: absolute;
       bottom: 75px;
       left: 12px;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0, 0, 0, 0.7);
       padding: 6px 10px;
       border-radius: 8px;
       font-size: 10px;
       color: #86efac;
-      max-width: 200px;
-      max-height: 50px;
+      max-width: 220px;
+      max-height: 60px;
       overflow-y: auto;
     }
 
@@ -534,7 +558,7 @@
 
   <!-- PRACTICE TUTORIAL BANNER -->
   <div class="practice-banner" id="practice-banner">
-    <strong>TUTORIAL LESSON:</strong> <span id="tutorial-text">Welcome to Practice Mode! Pick a card that matches shape or number.</span>
+    <strong>PRACTICE COACH:</strong> <span id="tutorial-text">Welcome to Practice Mode!</span>
   </div>
 
   <!-- GAME BOARD -->
@@ -542,7 +566,7 @@
 
     <!-- MULTIPLAYER CHAT PANEL -->
     <div class="chat-box" id="mp-chat-box">
-      <div class="chat-header">💬 MULTIPLAYER ROOM CHAT</div>
+      <div class="chat-header">💬 ROOM CHAT</div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="emoji-bar">
         <span onclick="sendEmoji('😂')">😂</span>
@@ -560,10 +584,12 @@
 
     <!-- MULTIPLAYER LOBBY -->
     <div class="mp-lobby" id="mp-lobby">
-      <h3>Join Online Room (Max 4)</h3>
+      <h3>Join/Host Room (2 - 4 Players)</h3>
       <input type="text" id="mp-name" placeholder="Enter Your Name">
       <input type="text" id="mp-room" value="1" placeholder="Enter Room Number">
-      <button class="nav-btn" style="width: 100%; padding: 10px; font-size: 13px;" onclick="joinRoom()">Join Room</button>
+      <div class="player-list-box" id="mp-player-list">Players: Waiting to join...</div>
+      <button class="nav-btn" style="width: 100%; padding: 10px; font-size: 13px;" onclick="joinRoom()">Enter Lobby</button>
+      <button class="nav-btn" id="start-mp-btn" style="width: 100%; padding: 10px; font-size: 13px; background:#eab308; display:none;" onclick="startMultiplayerGame()">Start Game (2-4 Players)</button>
     </div>
 
     <!-- OPPONENT AREA -->
@@ -615,7 +641,7 @@
 
   </div>
 
-  <!-- WHOT 20 CALL SELECTION MODAL -->
+  <!-- WHOT CALL SELECTION MODAL -->
   <div class="modal" id="wild-modal">
     <div class="modal-box">
       <h3 style="color: #facc15; text-align: center;" id="modal-title">⭐ SELECT REQUEST</h3>
@@ -648,16 +674,17 @@
     let requestedShape = null;
     let requestedNumber = null;
     let pendingCard = null;
-    let maxStepShape = null; // Used for 20 Max mode 2-step selection
+    let maxStepShape = null;
 
     let gameMode = "sp";
     let currentVariant = "classic";
     let pTurn = true;
     let peekCPU = false;
 
-    // Multiplayer Variables
+    // Multiplayer Variables (2-4 Players)
     let peer = null;
     let connections = [];
+    let roomPlayers = [];
     let isHost = false;
     let myPlayerName = "Player 1";
 
@@ -666,12 +693,30 @@
       "20number": "20 Number Mode: Playing a 20 lets you call out a NUMBER instead of a shape!",
       "20max": "20 Max Mode: Playing a 20 lets you call out BOTH a SHAPE and a NUMBER!",
       "peaceful": "Peaceful Mode: All numbers act as normal cards (No Pick 2/Hold On). Only 20 is Whot!",
-      "endless": "Endless Market: If you go to the market, you must keep drawing until you get a playable card!",
-      "no-general": "No General Market: Card 14 acts like a regular number. No multi-draw general markets!",
+      "endless": "Endless Market: If you go to market, keep drawing until you get a playable card!",
+      "no-general": "No General Market: Card 14 acts like a regular number. No multi-draw market!",
       "double": "Double Penalty: Aggressive mode! Card 2 forces Pick 4, and Card 5 forces Pick 6!",
-      "wild8": "Wild 8s: Number 8 cards act as extra Whot cards allowing you to change shape!",
-      "stacker": "Stacker Mode: Stack a 2 on top of another 2 to pass and multiply the draw penalty!"
+      "wild8": "Wild 8s: Number 8 cards act as extra Whot cards allowing shape change!",
+      "stacker": "Stacker Mode: Stack 2s to pass and multiply draw penalties!"
     };
+
+    /* ==== SPEECH SYNTHESIS ENGINE ==== */
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Stop any currently speaking audio
+        const cleanMsg = text.replace(/[\*\_\#]/g, '');
+        const utterance = new SpeechSynthesisUtterance(cleanMsg);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function writeLog(t) {
+      const b = document.getElementById('log-box');
+      b.innerText = t + "\n" + b.innerText;
+      speakText(t);
+    }
 
     function buildDeck() {
       deck = [];
@@ -682,11 +727,23 @@
       deck.sort(() => Math.random() - 0.5);
     }
 
+    function isSpecialCard(card) {
+      if (!card) return false;
+      return [1, 2, 5, 8, 14, 20].includes(card.num);
+    }
+
     function initGame() {
       buildDeck();
       pHand = deck.splice(0, 5);
       cpuHand = deck.splice(0, 5);
+      
+      // Ensure starting topCard is NOT a special card (1, 2, 5, 8, 14, 20)
       topCard = deck.pop();
+      while (isSpecialCard(topCard) && deck.length > 0) {
+        deck.unshift(topCard); // recycle to bottom of deck
+        topCard = deck.pop();
+      }
+
       requestedShape = null;
       requestedNumber = null;
       pTurn = true;
@@ -736,6 +793,15 @@
       pill.style.borderColor = color;
     }
 
+    function isCardPlayable(c) {
+      const isWild = (c.num === 20) || (currentVariant === 'wild8' && c.num === 8);
+      if (isWild) return true;
+      if (requestedShape && requestedNumber) return (c.shape === requestedShape || c.num === requestedNumber);
+      if (requestedShape) return (c.shape === requestedShape || c.num === topCard.num);
+      if (requestedNumber) return (c.num === requestedNumber || c.shape === topCard.shape);
+      return (c.shape === topCard.shape || c.num === topCard.num);
+    }
+
     function updateUI() {
       if (gameMode !== 'mp' || pHand.length > 0) {
         setTurnPill(pTurn ? "Your Turn" : "Opponent Turn", pTurn ? "#34d399" : "#ef4444");
@@ -743,7 +809,7 @@
       
       document.getElementById('played-card-slot').innerHTML = renderCardHTML(topCard);
 
-      // UPDATE REQUESTED BADGE (SUPPORT FOR SHAPE, NUMBER, AND BOTH)
+      // REQUESTED BADGE
       const badge = document.getElementById('requested-badge');
       if (requestedShape || requestedNumber) {
         badge.style.display = 'block';
@@ -760,16 +826,19 @@
         badge.style.display = 'none';
       }
 
+      // RENDER PLAYER CARDS
       const pRack = document.getElementById('player-rack');
       pRack.innerHTML = '';
       pHand.forEach((c, idx) => {
         const div = document.createElement('div');
-        div.innerHTML = renderCardHTML(c);
+        const playable = isCardPlayable(c);
+        div.innerHTML = renderCardHTML(c, (gameMode === 'pr' && pTurn && playable));
         div.onclick = () => playCard(idx);
         pRack.appendChild(div);
       });
       document.getElementById('player-count').innerText = `${pHand.length} cards remaining`;
 
+      // RENDER OPPONENT RACK
       const cpuRack = document.getElementById('opp-rack');
       cpuRack.innerHTML = '';
       cpuHand.forEach(c => {
@@ -787,11 +856,11 @@
       if (gameMode === 'pr' && pTurn) givePracticeHint();
     }
 
-    function renderCardHTML(c) {
+    function renderCardHTML(c, isHint = false) {
       if(!c) return '';
       const isWhot = c.num === 20 || (currentVariant === 'wild8' && c.num === 8);
       return `
-        <div class="card face ${isWhot ? 'whot-20' : ''}">
+        <div class="card face ${isWhot ? 'whot-20' : ''} ${isHint ? 'playable-hint' : ''}">
           <div class="num-top">${c.num}</div>
           <div class="symbol-center">${symbols[c.shape] || 'W'}</div>
           <div class="num-bottom">${c.num}</div>
@@ -803,32 +872,17 @@
       if (!pTurn) return writeLog("Wait for your turn!");
       const c = pHand[idx];
       
-      const isWild = (c.num === 20) || (currentVariant === 'wild8' && c.num === 8);
-      
-      let isMatch = isWild;
-      if (!isMatch) {
-        if (requestedShape && requestedNumber) {
-          isMatch = (c.shape === requestedShape) || (c.num === requestedNumber);
-        } else if (requestedShape) {
-          isMatch = (c.shape === requestedShape) || (c.num === topCard.num);
-        } else if (requestedNumber) {
-          isMatch = (c.num === requestedNumber) || (c.shape === topCard.shape);
-        } else {
-          isMatch = (c.shape === topCard.shape) || (c.num === topCard.num);
-        }
-      }
-
-      if (isMatch) {
+      if (isCardPlayable(c)) {
         pHand.splice(idx, 1);
         topCard = c;
 
+        const isWild = (c.num === 20) || (currentVariant === 'wild8' && c.num === 8);
         if (isWild) {
           pendingCard = c;
           openWildModal();
           return;
         }
 
-        // Clear active calls when playing regular card
         requestedShape = null;
         requestedNumber = null;
         finalizeTurn(c);
@@ -837,7 +891,6 @@
       }
     }
 
-    /* OPEN MODAL FOR WILD CALLS (SHAPE, NUMBER, OR MAX) */
     function openWildModal() {
       const grid = document.getElementById('modal-grid-options');
       grid.innerHTML = '';
@@ -954,13 +1007,7 @@
         while(deck.length > 0) {
           drawn = deck.pop();
           pHand.push(drawn);
-          let match = (drawn.num === 20);
-          if (requestedShape && requestedNumber) match = match || (drawn.shape === requestedShape) || (drawn.num === requestedNumber);
-          else if (requestedShape) match = match || (drawn.shape === requestedShape);
-          else if (requestedNumber) match = match || (drawn.num === requestedNumber);
-          else match = match || (drawn.shape === topCard.shape) || (drawn.num === topCard.num);
-
-          if (match) {
+          if (isCardPlayable(drawn)) {
             writeLog(`Found playable card: ${drawn.num} ${drawn.shape}!`);
             break;
           }
@@ -978,13 +1025,7 @@
     function cpuTurn() {
       if (cpuHand.length === 0 || gameMode === 'mp') return;
 
-      let matchIdx = cpuHand.findIndex(c => {
-        if (c.num === 20 || (currentVariant === 'wild8' && c.num === 8)) return true;
-        if (requestedShape && requestedNumber) return (c.shape === requestedShape || c.num === requestedNumber);
-        if (requestedShape) return c.shape === requestedShape || c.num === topCard.num;
-        if (requestedNumber) return c.num === requestedNumber || c.shape === topCard.shape;
-        return c.shape === topCard.shape || c.num === topCard.num;
-      });
+      let matchIdx = cpuHand.findIndex(c => isCardPlayable(c));
 
       if (matchIdx !== -1) {
         let c = cpuHand.splice(matchIdx, 1)[0];
@@ -993,7 +1034,7 @@
 
         if (isWild) {
           if (currentVariant === '20number') {
-            requestedNumber = c.num === 20 ? 5 : c.num;
+            requestedNumber = 5;
             requestedShape = null;
             writeLog(`Opponent played WHOT and called NUMBER [${requestedNumber}]`);
           } else if (currentVariant === '20max') {
@@ -1027,18 +1068,19 @@
     }
 
     function givePracticeHint() {
-      document.getElementById('tutorial-text').innerText = `${variantLessons[currentVariant]}`;
+      const playableCards = pHand.filter(c => isCardPlayable(c));
+      const textSpan = document.getElementById('tutorial-text');
+      if (playableCards.length > 0) {
+        textSpan.innerText = `💡 ${variantLessons[currentVariant]} You have ${playableCards.length} card(s) ready to play (glowing yellow)!`;
+      } else {
+        textSpan.innerText = `💡 No matching cards in hand! Click the Market stack to draw.`;
+      }
     }
 
     function checkEnd() {
       if (pHand.length === 0) { alert("You Won!"); initGame(); return true; }
       if (cpuHand.length === 0) { alert("Opponent Won!"); initGame(); return true; }
       return false;
-    }
-
-    function writeLog(t) {
-      const b = document.getElementById('log-box');
-      b.innerText = t + "\n" + b.innerText;
     }
 
     /* ==== MULTIPLAYER CHAT & MESSAGING SYSTEM ==== */
@@ -1067,129 +1109,155 @@
     }
 
     function broadcastData(data) {
-      if (isHost) {
-        connections.forEach(c => c.send(data));
-      } else if (connections.length > 0) {
-        connections[0].send(data);
-      }
+      connections.forEach(c => c.send(data));
     }
 
-    /* ==== MULTIPLAYER LOBBY CONNECTION ==== */
+    /* ==== MULTIPLAYER LOBBY CONNECTION (2 to 4 PLAYERS) ==== */
     function joinRoom() {
       myPlayerName = document.getElementById('mp-name').value || "Player";
       const roomNum = document.getElementById('mp-room').value || "1";
-      const hostId = `dot40-whot-room-${roomNum}`;
+      const roomId = "dot40-whot-room-" + roomNum;
 
-      document.getElementById('mp-lobby').style.display = 'none';
-      document.getElementById('player-label').innerText = myPlayerName;
-      document.getElementById('opp-icon').innerText = "🌐";
-      setTurnPill("Connecting to Room...", "#eab308");
-
+      setTurnPill("Connecting to Lobby...", "#facc15");
       peer = new Peer();
 
-      peer.on('open', () => {
-        let conn = peer.connect(hostId, { reliable: true });
-
+      peer.on('open', (id) => {
+        const conn = peer.connect(roomId);
+        
         conn.on('open', () => {
           isHost = false;
           connections = [conn];
-          conn.send({ type: 'handshake', name: myPlayerName, variant: currentVariant });
+          setupConnection(conn);
+          setTurnPill("Connected in Room", "#34d399");
+          writeLog("Joined multiplayer lobby.");
+          document.getElementById('player-label').innerText = myPlayerName;
+          conn.send({ type: 'join', name: myPlayerName });
         });
 
-        conn.on('data', (data) => {
-          if (data.type === 'chat') {
-            appendChatMessage(data.sender, data.text);
-          } else if (data.type === 'rejected') {
-            alert(data.reason);
-            changeMode('sp');
-          } else if (data.type === 'accepted') {
-            writeLog(`Connected to Room ${roomNum}. Variant: ${data.variant.toUpperCase()}`);
-            setTurnPill("Waiting for match start...", "#3b82f6");
-          }
-        });
+        conn.on('error', () => becomeHost(roomId));
+        
+        setTimeout(() => {
+          if (connections.length === 0) becomeHost(roomId);
+        }, 2000);
+      });
+    }
 
-        peer.on('error', (err) => {
-          if (err.type === 'peer-unavailable') {
-            peer.destroy();
-            peer = new Peer(hostId);
+    function becomeHost(roomId) {
+      if (peer) peer.destroy();
+      peer = new Peer(roomId);
 
-            peer.on('open', () => {
-              isHost = true;
-              connections = [];
-              setTurnPill("Waiting for opponents (Max 4)...", "#3b82f6");
-              writeLog(`Room ${roomNum} created. Playing [${currentVariant.toUpperCase()}].`);
-            });
+      peer.on('open', () => {
+        isHost = true;
+        connections = [];
+        roomPlayers = [myPlayerName];
+        setTurnPill("Hosting Room...", "#3b82f6");
+        writeLog(`Created Room ${roomId.replace('dot40-whot-room-', '')}. Waiting for 2-4 players...`);
+        document.getElementById('player-label').innerText = myPlayerName;
+        document.getElementById('start-mp-btn').style.display = 'block';
+        updateLobbyUI();
+      });
 
-            peer.on('connection', (c) => {
-              c.on('data', (data) => {
-                if (data.type === 'chat') {
-                  appendChatMessage(data.sender, data.text);
-                  // Relaying chat to all other connected peers
-                  connections.forEach(conn => { if (conn !== c) conn.send(data); });
-                } else if (data.type === 'handshake') {
-                  if (connections.length >= 3) {
-                    c.send({ type: 'rejected', reason: 'Room is full! Maximum 4 players allowed.' });
-                    return;
-                  }
-                  if (data.variant !== currentVariant) {
-                    c.send({ 
-                      type: 'rejected', 
-                      reason: `Variant Mismatch! Room Host is playing [${currentVariant.toUpperCase()}]. Change your dropdown variant to join!` 
-                    });
-                    return;
-                  }
+      peer.on('connection', (conn) => {
+        if (connections.length >= 3) { // Max 4 players (1 host + 3 clients)
+          conn.close();
+          return;
+        }
 
-                  connections.push(c);
-                  c.send({ type: 'accepted', variant: currentVariant });
-                  document.getElementById('opp-label').innerText = `${connections.length} Opponents Connected`;
-                  writeLog(`${data.name} joined room.`);
-                }
-              });
-            });
-          }
+        conn.on('open', () => {
+          connections.push(conn);
+          setupConnection(conn);
         });
       });
     }
 
-    function toggleCheats(show) { 
-      document.getElementById('cheat-modal').style.display = show ? 'flex' : 'none'; 
+    function setupConnection(conn) {
+      conn.on('data', (data) => {
+        if (data.type === 'join' && isHost) {
+          roomPlayers.push(data.name);
+          writeLog(`${data.name} joined the room!`);
+          updateLobbyUI();
+          broadcastData({ type: 'lobby_update', players: roomPlayers, variant: document.getElementById('whot-variant').value });
+        } else if (data.type === 'lobby_update' && !isHost) {
+          roomPlayers = data.players;
+          document.getElementById('whot-variant').value = data.variant;
+          currentVariant = data.variant;
+          updateLobbyUI();
+        } else if (data.type === 'chat') {
+          appendChatMessage(data.sender, data.text);
+        } else if (data.type === 'start_game') {
+          document.getElementById('mp-lobby').style.display = 'none';
+          writeLog("Multiplayer match started!");
+        }
+      });
+
+      conn.on('close', () => {
+        writeLog("A player disconnected.");
+      });
+    }
+
+    function updateLobbyUI() {
+      const box = document.getElementById('mp-player-list');
+      box.innerHTML = `<strong>Players (${roomPlayers.length}/4):</strong><br>` + roomPlayers.map((p, i) => `${i + 1}. ${p}`).join('<br>');
+      
+      const startBtn = document.getElementById('start-mp-btn');
+      if (isHost) {
+        startBtn.disabled = !(roomPlayers.length >= 2 && roomPlayers.length <= 4);
+        startBtn.style.opacity = startBtn.disabled ? "0.5" : "1";
+      }
+    }
+
+    function startMultiplayerGame() {
+      if (roomPlayers.length < 2 || roomPlayers.length > 4) {
+        return writeLog("Needs between 2 and 4 players to start!");
+      }
+      broadcastData({ type: 'start_game' });
+      document.getElementById('mp-lobby').style.display = 'none';
+      initGame();
+      writeLog("Multiplayer game started!");
+    }
+
+    /* ==== CHEAT TERMINAL CONTROLS ==== */
+    function toggleCheats(show) {
+      const modal = document.getElementById('cheat-modal');
+      modal.style.display = show ? 'flex' : 'none';
+      
       if(show) {
-        document.getElementById('cheat-code-input').value = '';
-        document.getElementById('cheat-msg').innerText = 'Type secret code and press Enter';
-        document.getElementById('cheat-msg').style.color = '#94a3b8';
+        document.getElementById('cheat-code-input').value = "";
+        document.getElementById('cheat-msg').innerText = "Type secret code and press Enter";
+        document.getElementById('cheat-msg').style.color = "#94a3b8";
+        document.getElementById('cheat-code-input').focus();
       }
     }
 
     function submitCheat() {
-      const code = document.getElementById('cheat-code-input').value.trim().toUpperCase();
+      const input = document.getElementById('cheat-code-input').value.toUpperCase().trim();
       const msg = document.getElementById('cheat-msg');
-
-      const cheatsMap = {
-        "PEEK": () => { peekCPU = !peekCPU; return "Peek Toggled!"; },
-        "WHOT20": () => { pHand.push({ shape: "Whot", num: 20 }); return "Whot 20 Card Added!"; },
-        "DRAW5": () => { if (deck.length >= 5) cpuHand.push(...deck.splice(0, 5)); return "Opponent Forced to Draw 5!"; },
-        "INSTAWIN": () => { pHand = []; checkEnd(); return "Instant Victory Executed!"; },
-        "SWAP": () => { let t = [...pHand]; pHand = [...cpuHand]; cpuHand = t; return "Hands Swapped Successfully!"; },
-        "SKIP": () => { pTurn = true; return "Opponent Skipped!"; },
-        "HOLDON": () => { pHand.push({ shape: "Circle", num: 1 }); return "Hold On Card Added!"; },
-        "PEEKDECK": () => { return deck.length > 0 ? `Market Top: ${deck[deck.length-1].num} ${deck[deck.length-1].shape}` : "Deck Empty!"; },
-        "WIPE": () => { cpuHand = []; checkEnd(); return "Opponent Hand Wiped!"; },
-        "INFINITE": () => { pTurn = true; return "Infinite Turns Enabled!"; }
-      };
-
-      if (cheatsMap[code]) {
-        const result = cheatsMap[code]();
-        msg.innerText = "⚡ SUCCESS: " + result;
+      
+      if (input === "PEEK") {
+        peekCPU = !peekCPU;
+        msg.innerText = peekCPU ? "👀 X-RAY VISION ACTIVATED!" : "X-RAY VISION DEACTIVATED.";
         msg.style.color = "#4ade80";
         updateUI();
-        setTimeout(() => toggleCheats(false), 1200);
+      } else if (input === "WIN") {
+        if (pHand.length > 1) pHand.length = 1;
+        msg.innerText = "🏆 ONE CARD LEFT!";
+        msg.style.color = "#facc15";
+        updateUI();
       } else {
-        msg.innerText = "❌ ACCESS DENIED: Invalid Cheat Code";
-        msg.style.color = "#f87171";
+        msg.innerText = "❌ INVALID CHEAT CODE!";
+        msg.style.color = "#ef4444";
       }
+      
+      setTimeout(() => {
+        if (document.getElementById('cheat-modal').style.display === 'flex') {
+          toggleCheats(false);
+        }
+      }, 1500);
     }
 
-    initGame();
+    window.onload = () => {
+      changeMode('sp');
+    };
   </script>
 </body>
 </html>
