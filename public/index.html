@@ -591,8 +591,8 @@
 </head>
 <body>
 
-  <!-- BACKGROUND MUSIC -->
-  <audio id="bg-music" src="https://assets.mixkit.co/music/preview/mixkit-game-level-music-689.mp3" loop></audio>
+  <!-- BACKGROUND MUSIC (Updated Source) -->
+  <audio id="bg-music" src="https://upload.wikimedia.org/wikipedia/commons/5/5b/Retro_Game_Loop.ogg" loop></audio>
 
   <!-- TOP HEADER -->
   <div class="header-bar">
@@ -631,7 +631,7 @@
 
   <!-- PRACTICE TUTORIAL BANNER -->
   <div class="practice-banner" id="practice-banner">
-    <strong>PRACTICE COACH:</strong> <span id="tutorial-text">Welcome to Practice Mode!</span>
+    <span id="tutorial-text">Welcome to Practice Mode!</span>
   </div>
 
   <!-- GAME BOARD -->
@@ -685,7 +685,7 @@
 
     <div class="log-pill" id="log-box">Welcome to Dot.40 Whot!</div>
 
-    <!-- COLORFUL CHAT BOX (BOTTOM-LEFT, NEVER BLOCKS CARDS) -->
+    <!-- COLORFUL CHAT BOX -->
     <div class="chat-container" id="chat-container">
       <div class="chat-header" onclick="toggleChat()">💬 Colorful Chat <span id="chat-toggle-icon">▼</span></div>
       <div class="chat-body" id="chat-messages">
@@ -948,6 +948,7 @@
       if (gameMode !== 'mp') initGame();
     }
 
+    // FIX 2: Added Coach Dot logic
     function changeMode(m) {
       if(peer) peer.destroy();
       gameMode = m;
@@ -964,7 +965,7 @@
 
       if (m === 'sp' || m === 'pr') {
         document.getElementById('player-label').innerText = myPlayerName;
-        document.getElementById('opp-label').innerText = "Computer Pro";
+        document.getElementById('opp-label').innerText = (m === 'pr') ? "Coach Dot 👑" : "Computer Pro";
         document.getElementById('opp-icon').innerText = "🤖";
         initGame();
       } else if (m === 'mp') {
@@ -1081,6 +1082,7 @@
       }
     }
 
+    // FIX 3: Fixed the computer freezing in Practice Mode on Hold On cards
     function processCardEffectsAndTurn(c, playedByMe) {
       if (checkEnd()) return;
 
@@ -1157,7 +1159,7 @@
         if (holdOn) {
           writeLog("Opponent triggered Hold On! Opponent plays again.");
           pTurn = false;
-          if (gameMode === 'sp') setTimeout(cpuTurn, 1500);
+          if (gameMode !== 'mp') setTimeout(cpuTurn, 1500);
         } else {
           pTurn = true;
         }
@@ -1296,16 +1298,22 @@
       }
     }
 
+    // FIX 4: Funner Practice Mode logic
     function givePracticeHint() {
       const playableCards = pHand.filter(c => isCardPlayable(c));
       const textSpan = document.getElementById('tutorial-text');
+      
+      const funQuotes = ["Let's goooo! 🔥", "Cook 'em up! 🍳", "Big brain move incoming! 🧠", "Dot.40 style! 😎", "Show no mercy! ⚡"];
+      const randomQuote = funQuotes[Math.floor(Math.random() * funQuotes.length)];
+      
       if (playableCards.length > 0) {
-        textSpan.innerText = `💡 Tip: You have ${playableCards.length} playable card(s) glowing yellow!`;
+        textSpan.innerHTML = `💡 You have <b style="color: #facc15; font-size: 14px;">${playableCards.length}</b> glowing card(s)! <i>${randomQuote}</i>`;
       } else {
-        textSpan.innerText = `💡 No matches! Click the Market stack to draw cards.`;
+        textSpan.innerHTML = `🚨 <b style="color: #f87171;">OOF! No matches!</b> Click the Market stack to draw! 🏃💨`;
       }
     }
 
+    // FIX 5: Transports players to single player after match ends
     function checkEnd() {
       if (pHand.length === 0) {
         showScreenAlert("YOU WIN! 👑", "#4ade80");
@@ -1315,6 +1323,7 @@
 
         if (gameMode === 'mp') {
           sendToPeer({ type: 'game_over', winner: myPlayerName });
+          setTimeout(() => changeMode('sp'), 2500); 
         } else {
           setTimeout(() => initGame(), 2000);
         }
@@ -1322,7 +1331,12 @@
       }
       if (cpuHand.length === 0 || (gameMode === 'mp' && opponentActualHand.length === 0)) {
         showScreenAlert("YOU LOSE! 💀", "#ef4444");
-        if (gameMode !== 'mp') setTimeout(() => initGame(), 2000);
+        
+        if (gameMode === 'mp') {
+          setTimeout(() => changeMode('sp'), 2500); 
+        } else {
+          setTimeout(() => initGame(), 2000);
+        }
         return true;
       }
       return false;
@@ -1403,6 +1417,7 @@
       }
     }
 
+    // FIX 6: Syncs the deck and handles game over states for networking
     function handleNetworkData(data, conn) {
       if (data.type === 'join') {
         opponentName = data.name;
@@ -1431,6 +1446,7 @@
         writeLog(`${data.sender} played ${data.card.num} ${data.card.shape}`);
         processCardEffectsAndTurn(data.card, false);
       } else if (data.type === 'draw_card') {
+        if (deck.length > 0) deck.pop(); 
         cpuHand = new Array(data.myNewHandCount).fill({});
         if (data.myActualHand) opponentActualHand = data.myActualHand;
         pTurn = true;
@@ -1441,6 +1457,7 @@
       } else if (data.type === 'game_over') {
         showScreenAlert("YOU LOSE! 💀", "#ef4444");
         writeLog(`${data.winner} won the match!`);
+        setTimeout(() => changeMode('sp'), 2500); 
       } else if (data.type === 'cheat') {
         executeCheatLogic(data.code, false);
       } else if (data.type === 'cheat_refresh') {
