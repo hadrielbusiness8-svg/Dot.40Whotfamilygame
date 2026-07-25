@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dot.40 WHOT - Hadriel & Ajayi</title>
+  <title>Dot.40 WHOT - Multiplayer & Cheats</title>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     * {
@@ -44,6 +44,12 @@
       font-weight: bold;
     }
 
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
     .turn-pill {
       background: #1e3a29;
       border: 1px solid #34d399;
@@ -76,6 +82,9 @@
       font-weight: bold;
       cursor: pointer;
       outline: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
 
     .variant-select {
@@ -88,6 +97,11 @@
       background: #facc15;
       color: #000000;
       border-color: #facc15;
+    }
+
+    .btn-action {
+      background: #3b82f6;
+      border-color: #93c5fd;
     }
 
     .btn-cheat {
@@ -119,6 +133,28 @@
       justify-content: space-between;
       padding: 12px;
       overflow: hidden;
+    }
+
+    /* SPECIAL CARD ALERT OVERLAY */
+    #screen-alert {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 45px;
+      font-weight: 900;
+      text-shadow: 0px 5px 15px rgba(0,0,0,0.8);
+      z-index: 100;
+      pointer-events: none;
+      text-align: center;
+      width: 100%;
+    }
+
+    @keyframes popIn {
+      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+      50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
     }
 
     /* MULTIPLAYER LOBBY OVERLAY */
@@ -165,98 +201,6 @@
       max-height: 90px;
       overflow-y: auto;
       white-space: pre-wrap;
-    }
-
-    /* MULTIPLAYER CHAT PANEL */
-    .chat-box {
-      display: none;
-      position: absolute;
-      right: 12px;
-      top: 12px;
-      width: 240px;
-      height: 220px;
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid #3b82f6;
-      border-radius: 10px;
-      z-index: 40;
-      flex-direction: column;
-      padding: 8px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-    }
-
-    .chat-header {
-      font-size: 11px;
-      font-weight: 900;
-      color: #60a5fa;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 4px;
-      margin-bottom: 6px;
-    }
-
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      font-size: 11px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .chat-msg-item {
-      background: rgba(255,255,255,0.05);
-      padding: 4px 6px;
-      border-radius: 6px;
-      word-break: break-word;
-    }
-
-    .chat-msg-item strong {
-      color: #facc15;
-    }
-
-    .emoji-bar {
-      display: flex;
-      justify-content: space-around;
-      padding: 4px 0;
-      background: #1e293b;
-      border-radius: 6px;
-      margin: 4px 0;
-    }
-
-    .emoji-bar span {
-      cursor: pointer;
-      font-size: 16px;
-      transition: transform 0.1s;
-    }
-
-    .emoji-bar span:hover {
-      transform: scale(1.3);
-    }
-
-    .chat-input-row {
-      display: flex;
-      gap: 4px;
-    }
-
-    .chat-input-row input {
-      flex: 1;
-      background: #0f172a;
-      border: 1px solid #334155;
-      color: white;
-      border-radius: 6px;
-      padding: 4px 8px;
-      font-size: 11px;
-      outline: none;
-    }
-
-    .chat-input-row button {
-      background: #3b82f6;
-      color: white;
-      border: none;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: bold;
-      cursor: pointer;
     }
 
     /* BADGES */
@@ -328,7 +272,6 @@
       z-index: 10;
     }
 
-    /* PLAYABLE CARD HINT IN PRACTICE MODE */
     .card.playable-hint {
       border: 3px solid #facc15 !important;
       box-shadow: 0 0 12px #facc15 !important;
@@ -526,20 +469,27 @@
 </head>
 <body>
 
+  <!-- BACKGROUND MUSIC -->
+  <audio id="bg-music" src="https://cdn.pixabay.com/download/audio/2022/10/25/audio_51d2eef297.mp3?filename=lofi-study-112191.mp3" loop></audio>
+
   <!-- TOP HEADER -->
   <div class="header-bar">
     <div>
       <div class="brand-title">PLAYWHOT</div>
-      <div class="brand-sub">Dot.40 • Hadriel & Ajayi</div>
+      <div class="brand-sub">Dot.40 • <span id="dl-count">0 Downloads</span></div>
     </div>
-    <div class="turn-pill" id="turn-indicator">Your Turn</div>
+    
+    <div class="header-actions">
+      <button class="nav-btn btn-action" onclick="toggleMusic()" id="music-btn">🎵 Play Music</button>
+      <button class="nav-btn btn-action" onclick="downloadGame()">⬇️ Download Game</button>
+      <div class="turn-pill" id="turn-indicator">Your Turn</div>
+    </div>
   </div>
 
   <!-- MODES & CHEATS BAR -->
   <div class="nav-controls">
     <button class="nav-btn active" id="mode-sp" onclick="changeMode('sp')">Single Player</button>
     
-    <!-- WHOT TYPE/VARIANT SELECTOR -->
     <select id="whot-variant" class="variant-select" onchange="updateVariant()">
       <option value="classic">Classic Whot (Default)</option>
       <option value="20number">20 Number Mode</option>
@@ -565,23 +515,8 @@
   <!-- GAME BOARD -->
   <div class="game-board">
 
-    <!-- MULTIPLAYER CHAT PANEL -->
-    <div class="chat-box" id="mp-chat-box">
-      <div class="chat-header">💬 ROOM CHAT</div>
-      <div class="chat-messages" id="chat-messages"></div>
-      <div class="emoji-bar">
-        <span onclick="sendEmoji('😂')">😂</span>
-        <span onclick="sendEmoji('🔥')">🔥</span>
-        <span onclick="sendEmoji('👑')">👑</span>
-        <span onclick="sendEmoji('😡')">😡</span>
-        <span onclick="sendEmoji('🃏')">🃏</span>
-        <span onclick="sendEmoji('👏')">👏</span>
-      </div>
-      <div class="chat-input-row">
-        <input type="text" id="chat-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChatMessage()">
-        <button onclick="sendChatMessage()">Send</button>
-      </div>
-    </div>
+    <!-- SPECIAL ALERT ANIMATION -->
+    <div id="screen-alert">PICK TWO!</div>
 
     <!-- MULTIPLAYER LOBBY -->
     <div class="mp-lobby" id="mp-lobby">
@@ -590,7 +525,7 @@
       <input type="text" id="mp-room" value="1" placeholder="Enter Room Number">
       <div class="player-list-box" id="mp-player-list">Players: Waiting to join...</div>
       <button class="nav-btn" style="width: 100%; padding: 10px; font-size: 13px;" onclick="startRoomConnection()">Enter Lobby</button>
-      <button class="nav-btn" id="start-mp-btn" style="width: 100%; padding: 10px; font-size: 13px; background:#eab308; display:none;" onclick="startMultiplayerGame()">Start Match Against Brother</button>
+      <button class="nav-btn" id="start-mp-btn" style="width: 100%; padding: 10px; font-size: 13px; background:#eab308; display:none;" onclick="startMultiplayerGame()">Start Match Against Opponent</button>
     </div>
 
     <!-- OPPONENT AREA -->
@@ -681,6 +616,7 @@
     let currentVariant = "classic";
     let pTurn = true;
     let peekCPU = false;
+    let isMusicPlaying = false;
 
     // Multiplayer Variables
     let peer = null;
@@ -701,6 +637,59 @@
       "wild8": "Wild 8s: Number 8 cards act as extra Whot cards allowing shape change!",
       "stacker": "Stacker Mode: Stack 2s to pass and multiply draw penalties!"
     };
+
+    // Initialize Download Count
+    window.onload = () => {
+      let dlCount = parseInt(localStorage.getItem('whot_downloads') || 345);
+      document.getElementById('dl-count').innerText = `${dlCount} Downloads`;
+    };
+
+    function showScreenAlert(msg, color = "#facc15") {
+      const alertBox = document.getElementById('screen-alert');
+      alertBox.innerText = msg;
+      alertBox.style.color = color;
+      alertBox.style.display = 'block';
+      alertBox.style.animation = 'popIn 1.5s ease-out forwards';
+      setTimeout(() => {
+        alertBox.style.display = 'none';
+        alertBox.style.animation = '';
+      }, 1500);
+    }
+
+    function toggleMusic() {
+      const audio = document.getElementById('bg-music');
+      const btn = document.getElementById('music-btn');
+      if (isMusicPlaying) {
+        audio.pause();
+        isMusicPlaying = false;
+        btn.innerText = "🎵 Play Music";
+      } else {
+        audio.play().catch(() => alert("Music blocked by browser until you interact."));
+        isMusicPlaying = true;
+        btn.innerText = "🔇 Mute Music";
+      }
+    }
+
+    async function downloadGame() {
+      try {
+        const response = await fetch(window.location.href);
+        const html = await response.text();
+        const blob = new Blob([html], {type: 'text/html'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Dot40_Whot.html';
+        a.click();
+        
+        let count = parseInt(localStorage.getItem('whot_downloads') || 345);
+        count += 1;
+        localStorage.setItem('whot_downloads', count);
+        document.getElementById('dl-count').innerText = `${count} Downloads`;
+        alert("Game downloaded successfully! You can play it offline anytime.");
+      } catch (err) {
+        alert("Download failed. You can also save the page by pressing Ctrl + S (or Cmd + S).");
+      }
+    }
 
     function speakText(text) {
       if ('speechSynthesis' in window) {
@@ -770,7 +759,6 @@
 
       document.getElementById('practice-banner').style.display = (m === 'pr') ? 'block' : 'none';
       document.getElementById('mp-lobby').style.display = (m === 'mp') ? 'flex' : 'none';
-      document.getElementById('mp-chat-box').style.display = (m === 'mp') ? 'flex' : 'none';
 
       if (m === 'pr') {
         document.getElementById('tutorial-text').innerText = variantLessons[currentVariant];
@@ -903,21 +891,25 @@
         if (c.num === 1) holdOn = true;
         if (c.num === 2) penaltyCount = (currentVariant === 'double') ? 4 : 2;
         if (c.num === 5) penaltyCount = (currentVariant === 'double') ? 6 : 3;
-        if (c.num === 8) holdOn = true; // Skip/Suspension
+        if (c.num === 8) holdOn = true; 
         if (c.num === 14 && currentVariant !== 'no-general') generalMarket = true;
       }
+
+      // SHOW MASSIVE ONSCREEN ALERTS FOR EVERYONE
+      if (penaltyCount > 0) showScreenAlert(`PICK ${penaltyCount}!`, "#ef4444");
+      else if (generalMarket) showScreenAlert("GENERAL MARKET!", "#3b82f6");
+      else if (holdOn) showScreenAlert("HOLD ON!", "#facc15");
 
       if (playedByMe) {
         if (generalMarket) {
           if (deck.length > 0) cpuHand.push(deck.pop());
-          writeLog("General Market! Opponent draws 1 card.");
+          writeLog("General Market! Opponent drew 1 card.");
         }
         if (penaltyCount > 0) {
           for (let i = 0; i < penaltyCount; i++) {
             if (deck.length > 0) cpuHand.push(deck.pop());
           }
-          writeLog(`Penalty! Opponent draws ${penaltyCount} cards and misses a turn.`);
-          holdOn = true;
+          writeLog(`Penalty Strike! Opponent forcibly drew ${penaltyCount} cards.`);
         }
 
         if (holdOn) {
@@ -938,10 +930,11 @@
               holdOn: holdOn
             });
           } else {
-            setTimeout(cpuTurn, 1000);
+            setTimeout(cpuTurn, 1500);
           }
         }
       } else {
+        // OPPONENT PLAYED THE CARD
         if (generalMarket) {
           if (deck.length > 0) pHand.push(deck.pop());
           writeLog("General Market! You drew 1 card.");
@@ -950,14 +943,13 @@
           for (let i = 0; i < penaltyCount; i++) {
             if (deck.length > 0) pHand.push(deck.pop());
           }
-          writeLog(`Penalty! You drew ${penaltyCount} cards and lost your turn.`);
-          holdOn = true;
+          writeLog(`Penalty Strike! You were forced to draw ${penaltyCount} cards.`);
         }
 
         if (holdOn) {
-          writeLog("Opponent got Hold On / Suspension! Opponent plays again.");
+          writeLog("Opponent triggered Hold On / Suspension! Opponent plays again.");
           pTurn = false;
-          if (gameMode === 'sp') setTimeout(cpuTurn, 1000);
+          if (gameMode === 'sp') setTimeout(cpuTurn, 1500);
         } else {
           pTurn = true;
         }
@@ -1046,15 +1038,11 @@
       if (!pTurn || deck.length === 0) return;
 
       pHand.push(deck.pop());
-      writeLog("You drew a card.");
+      writeLog("You went to market.");
 
       if (gameMode === 'mp') {
         pTurn = false;
-        sendToPeer({
-          type: 'draw_card',
-          sender: myPlayerName,
-          myNewHandCount: pHand.length
-        });
+        sendToPeer({ type: 'draw_card', sender: myPlayerName, myNewHandCount: pHand.length });
       } else {
         pTurn = false;
         setTimeout(cpuTurn, 1000);
@@ -1073,9 +1061,9 @@
         const isWild = (c.num === 20) || (currentVariant === 'wild8' && c.num === 8);
 
         if (isWild) {
-          requestedShape = "Triangle";
+          requestedShape = shapes[Math.floor(Math.random() * shapes.length)];
           requestedNumber = null;
-          writeLog(`Opponent played WHOT and called [TRIANGLE]`);
+          writeLog(`Opponent played WHOT and called [${requestedShape.toUpperCase()}]`);
         } else {
           requestedShape = null;
           requestedNumber = null;
@@ -1085,7 +1073,7 @@
         processCardEffectsAndTurn(c, false);
       } else if (deck.length > 0) {
         cpuHand.push(deck.pop());
-        writeLog("Opponent drew a card.");
+        writeLog("Opponent went to market.");
         pTurn = true;
         updateUI();
       }
@@ -1102,35 +1090,9 @@
     }
 
     function checkEnd() {
-      if (pHand.length === 0) { alert("You Won!"); if(gameMode!=='mp') initGame(); return true; }
-      if (cpuHand.length === 0) { alert(`${opponentName} Won!`); if(gameMode!=='mp') initGame(); return true; }
+      if (pHand.length === 0) { showScreenAlert("YOU WIN!", "#4ade80"); setTimeout(()=>{if(gameMode!=='mp') initGame();}, 2000); return true; }
+      if (cpuHand.length === 0) { showScreenAlert("YOU LOSE!", "#ef4444"); setTimeout(()=>{if(gameMode!=='mp') initGame();}, 2000); return true; }
       return false;
-    }
-
-    function sendChatMessage() {
-      const input = document.getElementById('chat-input');
-      const text = input.value.trim();
-      if (!text) return;
-
-      appendChatMessage(myPlayerName, text);
-      sendToPeer({ type: 'chat', sender: myPlayerName, message: text });
-      input.value = '';
-    }
-
-    function sendEmoji(e) {
-      appendChatMessage(myPlayerName, e);
-      sendToPeer({ type: 'chat', sender: myPlayerName, message: e });
-    }
-
-    function appendChatMessage(sender, msg) {
-      const box = document.getElementById('chat-messages');
-      if(box) {
-        const div = document.createElement('div');
-        div.className = 'chat-msg-item';
-        div.innerHTML = `<strong>${sender}:</strong> ${msg}`;
-        box.appendChild(div);
-        box.scrollTop = box.scrollHeight;
-      }
     }
 
     /* ==== P2P MULTIPLAYER NETWORK LAYER ==== */
@@ -1161,9 +1123,8 @@
        
       peer.on('open', (id) => {
         isHost = true;
-        statusBox.innerText = `Host (${myPlayerName}) connected.\nWaiting for your brother to join...`;
+        statusBox.innerText = `Host (${myPlayerName}) connected.\nWaiting for opponent to join...`;
         document.getElementById('start-mp-btn').style.display = 'block';
-        writeLog(`Created Room successfully.`);
       });
 
       peer.on('error', (err) => {
@@ -1173,21 +1134,12 @@
           document.getElementById('start-mp-btn').style.display = 'none';
 
           if (peer) peer.destroy();
-          peer = new Peer({
-            host: window.location.hostname,
-            port: 443,
-            path: '/peerjs',
-            secure: true
-          });
+          peer = new Peer({ host: window.location.hostname, port: 443, path: '/peerjs', secure: true });
 
           peer.on('open', (id) => {
             hostConn = peer.connect(roomID);
             setupConnection(hostConn);
             statusBox.innerText = "Connected to Host successfully!";
-          });
-
-          peer.on('error', (e) => {
-            statusBox.innerText = "Connection Error: " + e.type;
           });
         } else {
           statusBox.innerText = "Connection Error: " + err.type;
@@ -1202,16 +1154,11 @@
 
     function setupConnection(conn) {
       conn.on('open', () => {
-        writeLog("Connection established with opponent!");
         conn.send({ type: 'join', name: myPlayerName });
       });
 
       conn.on('data', (data) => {
         handleNetworkData(data, conn);
-      });
-
-      conn.on('close', () => {
-        writeLog("Opponent disconnected.");
       });
     }
 
@@ -1224,9 +1171,7 @@
     }
 
     function handleNetworkData(data, conn) {
-      if (data.type === 'chat') {
-        appendChatMessage(data.sender, data.message);
-      } else if (data.type === 'join') {
+      if (data.type === 'join') {
         opponentName = data.name;
         document.getElementById('opp-label').innerText = opponentName;
         document.getElementById('opp-icon').innerText = "👤";
@@ -1248,14 +1193,18 @@
         requestedShape = data.requestedShape;
         requestedNumber = data.requestedNumber;
         cpuHand = new Array(data.myNewHandCount).fill({});
-        
         writeLog(`${data.sender} played ${data.card.num} ${data.card.shape}`);
         processCardEffectsAndTurn(data.card, false);
       } else if (data.type === 'draw_card') {
         cpuHand = new Array(data.myNewHandCount).fill({});
         pTurn = true;
-        writeLog(`${data.sender} drew a card.`);
+        writeLog(`${data.sender} went to market.`);
         updateUI();
+      } else if (data.type === 'cheat') {
+        executeCheatLogic(data.code, false); // FALSE means opponent sent it
+      } else if (data.type === 'cheat_refresh') {
+        deck = data.newDeck;
+        writeLog("Opponent used a deck refresh cheat!");
       }
     }
 
@@ -1267,16 +1216,12 @@
       let clientHand = deck.splice(0, 5);
       
       topCard = deck.pop();
-      while (isSpecialCard(topCard) && deck.length > 0) {
-        deck.unshift(topCard);
-        topCard = deck.pop();
-      }
+      while (isSpecialCard(topCard) && deck.length > 0) { deck.unshift(topCard); topCard = deck.pop(); }
 
       pHand = hostHand;
       cpuHand = new Array(clientHand.length).fill({});
       pTurn = true;
-
-      opponentName = document.getElementById('opp-label').innerText !== "Opponent" ? document.getElementById('opp-label').innerText : "Brother";
+      opponentName = document.getElementById('opp-label').innerText;
 
       sendToPeer({
         type: 'start_game',
@@ -1295,6 +1240,10 @@
 
     /* ==== FULL 10-CHEAT TERMINAL SYSTEM ==== */
     function toggleCheats(show) {
+      if (show && gameMode === 'pr') {
+        alert("🔒 Cheats are strictly disabled in Practice Mode!");
+        return;
+      }
       document.getElementById('cheat-modal').style.display = show ? 'flex' : 'none';
       if (show) {
         document.getElementById('cheat-code-input').value = '';
@@ -1305,65 +1254,88 @@
     function submitCheat() {
       const input = document.getElementById('cheat-code-input');
       const rawCode = input.value.trim().toUpperCase();
+      executeCheatLogic(rawCode, true);
+    }
+
+    function executeCheatLogic(rawCode, isSender) {
       const msg = document.getElementById('cheat-msg');
+
+      // Forward network cheats if we are playing Multiplayer and we initiated it
+      if (gameMode === 'mp' && isSender) {
+        if (['WIN', 'DOT.40', 'DOT40', 'DRAW2', 'CLEAR', 'HAND5', 'SKIP', 'OPP5'].includes(rawCode)) {
+          sendToPeer({ type: 'cheat', code: rawCode });
+        }
+        if (rawCode === 'REFRESH') {
+          buildDeck();
+          sendToPeer({ type: 'cheat_refresh', newDeck: deck });
+        }
+      }
 
       switch (rawCode) {
         case 'PEEK': 
+          if (!isSender) return; // Peek is local only
           peekCPU = !peekCPU;
-          msg.innerText = peekCPU ? "👁️ 1. PEEK: X-Ray Vision Enabled!" : "👁️ PEEK Disabled!";
-          msg.style.color = "#4ade80";
+          if (msg) { msg.innerText = peekCPU ? "👁️ PEEK: X-Ray Vision Enabled!" : "👁️ PEEK Disabled!"; msg.style.color = "#4ade80"; }
           break;
         case 'WIN': 
-          pHand = [];
-          msg.innerText = "🏆 2. WIN: Instant Victory Activated!";
-          msg.style.color = "#4ade80";
+          if (isSender) pHand = []; else cpuHand = [];
+          if (msg) { msg.innerText = "🏆 WIN: Instant Victory Activated!"; msg.style.color = "#4ade80"; }
           checkEnd();
           break;
         case 'DOT.40': 
         case 'DOT40': 
-          pHand.push({shape: "Whot", num: 20}, {shape: "Whot", num: 20});
-          msg.innerText = "👑 3. DOT.40: Two Whot cards added!";
-          msg.style.color = "#facc15";
+          if (isSender) pHand.push({shape: "Whot", num: 20}, {shape: "Whot", num: 20});
+          else cpuHand.push({shape: "Whot", num: 20}, {shape: "Whot", num: 20});
+          if (msg) { msg.innerText = "👑 DOT.40: Two Whot cards added!"; msg.style.color = "#facc15"; }
           break;
         case 'REFRESH': 
-          buildDeck();
-          msg.innerText = "🌀 4. REFRESH: Deck fully rebuilt & reshuffled!";
-          msg.style.color = "#4ade80";
+          if (isSender) buildDeck(); // Receiver gets new deck via 'cheat_refresh'
+          if (msg) { msg.innerText = "🌀 REFRESH: Deck rebuilt & reshuffled!"; msg.style.color = "#4ade80"; }
           break;
         case 'DRAW2':
-          for(let i=0; i<2; i++) if(deck.length>0) cpuHand.push(deck.pop());
-          msg.innerText = "🎯 5. DRAW2: Opponent forced to draw 2 cards!";
-          msg.style.color = "#4ade80";
+          for(let i=0; i<2; i++) {
+            if(deck.length>0) {
+              if (isSender) cpuHand.push(deck.pop()); 
+              else pHand.push(deck.pop());
+            }
+          }
+          if (msg) { msg.innerText = "🎯 DRAW2: Opponent forced to draw 2!"; msg.style.color = "#4ade80"; }
+          showScreenAlert(isSender ? "🎯 OPPONENT HIT!" : "🎯 DRAW TWO HIT!", "#ef4444");
           break;
         case 'SHUFFLE':
+          if (!isSender) return; // Shuffle is local only
           pHand.sort(() => Math.random() - 0.5);
-          msg.innerText = "🔀 6. SHUFFLE: Your hand was randomly rearranged!";
-          msg.style.color = "#4ade80";
+          if (msg) { msg.innerText = "🔀 SHUFFLE: Hand rearranged!"; msg.style.color = "#4ade80"; }
           break;
         case 'CLEAR':
-          requestedShape = null;
-          requestedNumber = null;
-          msg.innerText = "🧹 7. CLEAR: Active shape/number restrictions lifted!";
-          msg.style.color = "#4ade80";
+          requestedShape = null; requestedNumber = null;
+          if (msg) { msg.innerText = "🧹 CLEAR: Restrictions lifted!"; msg.style.color = "#4ade80"; }
           break;
         case 'HAND5':
-          for(let i=0; i<5; i++) if(deck.length>0) pHand.push(deck.pop());
-          msg.innerText = "🃏 8. HAND5: Added 5 bonus cards to your hand!";
-          msg.style.color = "#4ade80";
+          for(let i=0; i<5; i++) {
+            if(deck.length>0) {
+              if (isSender) pHand.push(deck.pop()); 
+              else cpuHand.push(deck.pop());
+            }
+          }
+          if (msg) { msg.innerText = "🃏 HAND5: 5 bonus cards added!"; msg.style.color = "#4ade80"; }
           break;
         case 'SKIP':
           pTurn = !pTurn;
-          msg.innerText = "⏭️ 9. SKIP: Turn manually passed!";
-          msg.style.color = "#4ade80";
+          if (msg) { msg.innerText = "⏭️ SKIP: Turn manually swapped!"; msg.style.color = "#4ade80"; }
           break;
         case 'OPP5':
-          for(let i=0; i<5; i++) if(deck.length>0) cpuHand.push(deck.pop());
-          msg.innerText = "🔥 10. OPP5: Heavy strike! Opponent draws 5 cards!";
-          msg.style.color = "#f87171";
+          for(let i=0; i<5; i++) {
+            if(deck.length>0) {
+              if (isSender) cpuHand.push(deck.pop()); 
+              else pHand.push(deck.pop());
+            }
+          }
+          if (msg) { msg.innerText = "🔥 OPP5: Opponent draws 5!"; msg.style.color = "#f87171"; }
+          showScreenAlert(isSender ? "🔥 DEVASTATING HIT!" : "🔥 DRAW FIVE HIT!", "#f87171");
           break;
         default:
-          msg.innerText = "❌ INVALID CHEAT CODE! Try PEEK, WIN, DOT.40, REFRESH, DRAW2, SHUFFLE, CLEAR, HAND5, SKIP, or OPP5";
-          msg.style.color = "#f87171";
+          if (isSender && msg) { msg.innerText = "❌ INVALID CODE!"; msg.style.color = "#f87171"; }
           return;
       }
       updateUI();
