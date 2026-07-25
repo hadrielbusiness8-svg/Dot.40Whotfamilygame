@@ -394,6 +394,87 @@
       overflow-y: auto;
     }
 
+    /* MULTIPLAYER CHAT BOX */
+    .chat-container {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      width: 280px;
+      background: #0b2214;
+      border: 2px solid #34d399;
+      border-radius: 10px;
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
+
+    .chat-header {
+      background: #1e3a29;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: bold;
+      color: #facc15;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-body {
+      height: 110px;
+      overflow-y: auto;
+      padding: 6px;
+      font-size: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .chat-msg {
+      background: #1e293b;
+      padding: 4px 6px;
+      border-radius: 4px;
+      color: #e2e8f0;
+      word-break: break-word;
+    }
+
+    .chat-msg span {
+      font-weight: bold;
+      color: #38bdf8;
+    }
+
+    .chat-system-msg {
+      color: #facc15;
+      font-style: italic;
+      text-align: center;
+    }
+
+    .chat-input-area {
+      display: flex;
+      padding: 6px;
+      gap: 4px;
+      background: #092c18;
+      border-top: 1px solid #1e3a29;
+    }
+
+    .chat-input-area input {
+      flex: 1;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 4px;
+      padding: 5px 8px;
+      color: white;
+      font-size: 10px;
+      outline: none;
+    }
+
+    .chat-input-area button {
+      padding: 5px 8px;
+      font-size: 10px;
+      background: #3b82f6;
+    }
+
     /* MODAL WINDOWS */
     .modal {
       display: none;
@@ -470,8 +551,7 @@
 <body>
 
   <!-- BACKGROUND MUSIC -->
-  <!-- NEW CODE -->
-<audio id="bg-music" src="https://assets.mixkit.co/music/preview/mixkit-game-level-music-689.mp3" loop></audio>
+  <audio id="bg-music" src="https://assets.mixkit.co/music/preview/mixkit-game-level-music-689.mp3" loop></audio>
 
   <!-- TOP HEADER -->
   <div class="header-bar">
@@ -564,6 +644,18 @@
 
     <div class="log-pill" id="log-box">Welcome to Dot.40 Whot!</div>
 
+    <!-- IN-GAME CHAT BOX -->
+    <div class="chat-container" id="chat-container">
+      <div class="chat-header" onclick="toggleChat()">💬 Game Chat <span id="chat-toggle-icon">▼</span></div>
+      <div class="chat-body" id="chat-messages">
+        <div class="chat-system-msg">System: Live chat ready!</div>
+      </div>
+      <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+        <button onclick="sendChatMessage()">Send</button>
+      </div>
+    </div>
+
     <!-- PLAYER AREA -->
     <div>
       <div class="rack" id="player-rack" style="margin-bottom: -10px;"></div>
@@ -606,6 +698,7 @@
     let deck = [];
     let pHand = [];
     let cpuHand = []; 
+    let opponentActualHand = []; // Synced for PEEK cheat in multiplayer
     let topCard = null;
     
     let requestedShape = null;
@@ -618,6 +711,7 @@
     let pTurn = true;
     let peekCPU = false;
     let isMusicPlaying = false;
+    let chatVisible = true;
 
     // Multiplayer Variables
     let peer = null;
@@ -711,6 +805,45 @@
       speakText(t);
     }
 
+    // Chat Functions
+    function toggleChat() {
+      const body = document.getElementById('chat-messages');
+      const inputArea = document.querySelector('.chat-input-area');
+      const icon = document.getElementById('chat-toggle-icon');
+      chatVisible = !chatVisible;
+      body.style.display = chatVisible ? 'flex' : 'none';
+      inputArea.style.display = chatVisible ? 'flex' : 'none';
+      icon.innerText = chatVisible ? '▼' : '▲';
+    }
+
+    function sendChatMessage() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+      
+      appendChatMessage(myPlayerName, text);
+      
+      if (gameMode === 'mp') {
+        sendToPeer({ type: 'chat', sender: myPlayerName, message: text });
+      }
+      input.value = '';
+    }
+
+    function appendChatMessage(sender, text) {
+      const box = document.getElementById('chat-messages');
+      const div = document.createElement('div');
+      div.className = 'chat-msg';
+      div.innerHTML = `<span>${sender}:</span> ${escapeHTML(text)}`;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+
     function buildDeck() {
       deck = [];
       shapes.forEach(s => {
@@ -729,6 +862,7 @@
       buildDeck();
       pHand = deck.splice(0, 5);
       cpuHand = deck.splice(0, 5);
+      opponentActualHand = [...cpuHand];
       
       topCard = deck.pop();
       while (isSpecialCard(topCard) && deck.length > 0) {
@@ -772,7 +906,7 @@
         initGame();
       } else if (m === 'mp') {
         setTurnPill("Lobby Setup...", "#facc15");
-        pHand = []; cpuHand = []; topCard = null; 
+        pHand = []; cpuHand = []; opponentActualHand = []; topCard = null; 
         requestedShape = null; requestedNumber = null;
         document.getElementById('player-count').innerText = "Waiting to start...";
         document.getElementById('opp-count').innerText = "Waiting to start...";
@@ -829,19 +963,23 @@
       });
       document.getElementById('player-count').innerText = `${pHand.length} cards remaining`;
 
+      // Opponent rack rendering with PEEK cheat support
       const cpuRack = document.getElementById('opp-rack');
       cpuRack.innerHTML = '';
-      for (let i = 0; i < cpuHand.length; i++) {
+      const targetOppHand = (gameMode === 'mp') ? (opponentActualHand.length > 0 ? opponentActualHand : cpuHand) : cpuHand;
+      
+      for (let i = 0; i < targetOppHand.length; i++) {
         const div = document.createElement('div');
-        if (peekCPU && cpuHand[i].shape) {
-          div.innerHTML = renderCardHTML(cpuHand[i]);
+        const cardData = targetOppHand[i];
+        if (peekCPU && cardData && cardData.shape) {
+          div.innerHTML = renderCardHTML(cardData);
         } else {
           div.className = "card back";
           div.innerHTML = `<div class="watermark">WHOT!</div>`;
         }
         cpuRack.appendChild(div);
       }
-      document.getElementById('opp-count').innerText = `${cpuHand.length} cards remaining`;
+      document.getElementById('opp-count').innerText = `${targetOppHand.length} cards remaining`;
 
       if (gameMode === 'pr' && pTurn) givePracticeHint();
     }
@@ -896,19 +1034,26 @@
         if (c.num === 14 && currentVariant !== 'no-general') generalMarket = true;
       }
 
-      // SHOW MASSIVE ONSCREEN ALERTS FOR EVERYONE
       if (penaltyCount > 0) showScreenAlert(`PICK ${penaltyCount}!`, "#ef4444");
       else if (generalMarket) showScreenAlert("GENERAL MARKET!", "#3b82f6");
       else if (holdOn) showScreenAlert("HOLD ON!", "#facc15");
 
       if (playedByMe) {
         if (generalMarket) {
-          if (deck.length > 0) cpuHand.push(deck.pop());
+          if (deck.length > 0) {
+            const drawn = deck.pop();
+            cpuHand.push(drawn);
+            opponentActualHand.push(drawn);
+          }
           writeLog("General Market! Opponent drew 1 card.");
         }
         if (penaltyCount > 0) {
           for (let i = 0; i < penaltyCount; i++) {
-            if (deck.length > 0) cpuHand.push(deck.pop());
+            if (deck.length > 0) {
+              const drawn = deck.pop();
+              cpuHand.push(drawn);
+              opponentActualHand.push(drawn);
+            }
           }
           writeLog(`Penalty Strike! Opponent forcibly drew ${penaltyCount} cards.`);
         }
@@ -926,6 +1071,7 @@
               requestedShape: requestedShape,
               requestedNumber: requestedNumber,
               myNewHandCount: pHand.length,
+              myActualHand: pHand, // Sync hand for PEEK
               penalty: penaltyCount,
               generalMarket: generalMarket,
               holdOn: holdOn
@@ -935,7 +1081,6 @@
           }
         }
       } else {
-        // OPPONENT PLAYED THE CARD
         if (generalMarket) {
           if (deck.length > 0) pHand.push(deck.pop());
           writeLog("General Market! You drew 1 card.");
@@ -1038,12 +1183,18 @@
     function playerDraw() {
       if (!pTurn || deck.length === 0) return;
 
-      pHand.push(deck.pop());
+      const drawn = deck.pop();
+      pHand.push(drawn);
       writeLog("You went to market.");
 
       if (gameMode === 'mp') {
         pTurn = false;
-        sendToPeer({ type: 'draw_card', sender: myPlayerName, myNewHandCount: pHand.length });
+        sendToPeer({ 
+          type: 'draw_card', 
+          sender: myPlayerName, 
+          myNewHandCount: pHand.length,
+          myActualHand: pHand 
+        });
       } else {
         pTurn = false;
         setTimeout(cpuTurn, 1000);
@@ -1058,6 +1209,7 @@
 
       if (matchIdx !== -1) {
         let c = cpuHand.splice(matchIdx, 1)[0];
+        opponentActualHand = [...cpuHand];
         topCard = c;
         const isWild = (c.num === 20) || (currentVariant === 'wild8' && c.num === 8);
 
@@ -1073,7 +1225,9 @@
 
         processCardEffectsAndTurn(c, false);
       } else if (deck.length > 0) {
-        cpuHand.push(deck.pop());
+        const drawn = deck.pop();
+        cpuHand.push(drawn);
+        opponentActualHand = [...cpuHand];
         writeLog("Opponent went to market.");
         pTurn = true;
         updateUI();
@@ -1092,7 +1246,7 @@
 
     function checkEnd() {
       if (pHand.length === 0) { showScreenAlert("YOU WIN!", "#4ade80"); setTimeout(()=>{if(gameMode!=='mp') initGame();}, 2000); return true; }
-      if (cpuHand.length === 0) { showScreenAlert("YOU LOSE!", "#ef4444"); setTimeout(()=>{if(gameMode!=='mp') initGame();}, 2000); return true; }
+      if (cpuHand.length === 0 || (gameMode === 'mp' && opponentActualHand.length === 0)) { showScreenAlert("YOU LOSE!", "#ef4444"); setTimeout(()=>{if(gameMode!=='mp') initGame();}, 2000); return true; }
       return false;
     }
 
@@ -1182,6 +1336,7 @@
         topCard = data.topCard;
         pHand = data.clientHand;
         cpuHand = new Array(data.hostHandCount).fill({});
+        opponentActualHand = data.hostInitialHand;
         pTurn = data.clientTurn;
         opponentName = data.hostName;
         document.getElementById('opp-label').innerText = opponentName;
@@ -1194,15 +1349,19 @@
         requestedShape = data.requestedShape;
         requestedNumber = data.requestedNumber;
         cpuHand = new Array(data.myNewHandCount).fill({});
+        if (data.myActualHand) opponentActualHand = data.myActualHand;
         writeLog(`${data.sender} played ${data.card.num} ${data.card.shape}`);
         processCardEffectsAndTurn(data.card, false);
       } else if (data.type === 'draw_card') {
         cpuHand = new Array(data.myNewHandCount).fill({});
+        if (data.myActualHand) opponentActualHand = data.myActualHand;
         pTurn = true;
         writeLog(`${data.sender} went to market.`);
         updateUI();
+      } else if (data.type === 'chat') {
+        appendChatMessage(data.sender, data.message);
       } else if (data.type === 'cheat') {
-        executeCheatLogic(data.code, false); // FALSE means opponent sent it
+        executeCheatLogic(data.code, false);
       } else if (data.type === 'cheat_refresh') {
         deck = data.newDeck;
         writeLog("Opponent used a deck refresh cheat!");
@@ -1221,6 +1380,7 @@
 
       pHand = hostHand;
       cpuHand = new Array(clientHand.length).fill({});
+      opponentActualHand = clientHand;
       pTurn = true;
       opponentName = document.getElementById('opp-label').innerText;
 
@@ -1230,6 +1390,7 @@
         topCard: topCard,
         clientHand: clientHand,
         hostHandCount: hostHand.length,
+        hostInitialHand: hostHand,
         clientTurn: false,
         hostName: myPlayerName
       });
@@ -1261,9 +1422,8 @@
     function executeCheatLogic(rawCode, isSender) {
       const msg = document.getElementById('cheat-msg');
 
-      // Forward network cheats if we are playing Multiplayer and we initiated it
       if (gameMode === 'mp' && isSender) {
-        if (['WIN', 'DOT.40', 'DOT40', 'DRAW2', 'CLEAR', 'HAND5', 'SKIP', 'OPP5'].includes(rawCode)) {
+        if (['WIN', 'DOT.40', 'DOT40', 'DRAW2', 'CLEAR', 'HAND5', 'SKIP', 'OPP5', 'PEEK'].includes(rawCode)) {
           sendToPeer({ type: 'cheat', code: rawCode });
         }
         if (rawCode === 'REFRESH') {
@@ -1274,7 +1434,6 @@
 
       switch (rawCode) {
         case 'PEEK': 
-          if (!isSender) return; // Peek is local only
           peekCPU = !peekCPU;
           if (msg) { msg.innerText = peekCPU ? "👁️ PEEK: X-Ray Vision Enabled!" : "👁️ PEEK Disabled!"; msg.style.color = "#4ade80"; }
           break;
@@ -1286,25 +1445,26 @@
         case 'DOT.40': 
         case 'DOT40': 
           if (isSender) pHand.push({shape: "Whot", num: 20}, {shape: "Whot", num: 20});
-          else cpuHand.push({shape: "Whot", num: 20}, {shape: "Whot", num: 20});
+          else { cpuHand.push({shape: "Whot", num: 20}, {shape: "Whot", num: 20}); opponentActualHand.push({shape: "Whot", num: 20}, {shape: "Whot", num: 20}); }
           if (msg) { msg.innerText = "👑 DOT.40: Two Whot cards added!"; msg.style.color = "#facc15"; }
           break;
         case 'REFRESH': 
-          if (isSender) buildDeck(); // Receiver gets new deck via 'cheat_refresh'
+          if (isSender) buildDeck();
           if (msg) { msg.innerText = "🌀 REFRESH: Deck rebuilt & reshuffled!"; msg.style.color = "#4ade80"; }
           break;
         case 'DRAW2':
           for(let i=0; i<2; i++) {
             if(deck.length>0) {
-              if (isSender) cpuHand.push(deck.pop()); 
-              else pHand.push(deck.pop());
+              const drawn = deck.pop();
+              if (isSender) { cpuHand.push(drawn); opponentActualHand.push(drawn); }
+              else pHand.push(drawn);
             }
           }
           if (msg) { msg.innerText = "🎯 DRAW2: Opponent forced to draw 2!"; msg.style.color = "#4ade80"; }
           showScreenAlert(isSender ? "🎯 OPPONENT HIT!" : "🎯 DRAW TWO HIT!", "#ef4444");
           break;
         case 'SHUFFLE':
-          if (!isSender) return; // Shuffle is local only
+          if (!isSender) return;
           pHand.sort(() => Math.random() - 0.5);
           if (msg) { msg.innerText = "🔀 SHUFFLE: Hand rearranged!"; msg.style.color = "#4ade80"; }
           break;
@@ -1315,8 +1475,9 @@
         case 'HAND5':
           for(let i=0; i<5; i++) {
             if(deck.length>0) {
-              if (isSender) pHand.push(deck.pop()); 
-              else cpuHand.push(deck.pop());
+              const drawn = deck.pop();
+              if (isSender) pHand.push(drawn); 
+              else { cpuHand.push(drawn); opponentActualHand.push(drawn); }
             }
           }
           if (msg) { msg.innerText = "🃏 HAND5: 5 bonus cards added!"; msg.style.color = "#4ade80"; }
@@ -1328,8 +1489,9 @@
         case 'OPP5':
           for(let i=0; i<5; i++) {
             if(deck.length>0) {
-              if (isSender) cpuHand.push(deck.pop()); 
-              else pHand.push(deck.pop());
+              const drawn = deck.pop();
+              if (isSender) { cpuHand.push(drawn); opponentActualHand.push(drawn); }
+              else pHand.push(drawn);
             }
           }
           if (msg) { msg.innerText = "🔥 OPP5: Opponent draws 5!"; msg.style.color = "#f87171"; }
