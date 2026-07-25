@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dot.40 WHOT - Multiplayer & Cheats</title>
+  <title>Dot.40 WHOT - Hadriel Ajayi</title>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     * {
@@ -109,7 +109,7 @@
       border-color: #f87171;
     }
 
-    /* TUTORIAL BANNER FOR PRACTICE MODE */
+    /* PRACTICE BANNER */
     .practice-banner {
       display: none;
       background: #1e3a29;
@@ -252,9 +252,9 @@
       justify-content: center;
       align-items: center;
       margin: 0 auto;
-      padding: 6px;
-      min-height: 120px;
-      max-height: 170px;
+      padding: 4px;
+      min-height: 110px;
+      max-height: 140px;
       overflow-y: auto;
       gap: 6px;
       width: 100%;
@@ -330,8 +330,8 @@
 
     /* CARDS */
     .card {
-      width: 70px;
-      height: 105px;
+      width: 65px;
+      height: 98px;
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.3);
       position: relative;
@@ -370,11 +370,11 @@
       border: 2px solid #eab308;
     }
 
-    .num-top { font-size: 13px; font-weight: 900; }
-    .num-bottom { font-size: 11px; font-weight: 900; text-align: right; }
+    .num-top { font-size: 12px; font-weight: 900; }
+    .num-bottom { font-size: 10px; font-weight: 900; text-align: right; }
     .symbol-center {
       text-align: center;
-      font-size: 28px;
+      font-size: 24px;
       font-weight: normal;
       line-height: 1;
     }
@@ -383,8 +383,8 @@
     .log-pill {
       position: absolute;
       bottom: 75px;
-      left: 12px;
-      background: rgba(0, 0, 0, 0.7);
+      right: 12px;
+      background: rgba(0, 0, 0, 0.75);
       padding: 6px 10px;
       border-radius: 8px;
       font-size: 10px;
@@ -394,19 +394,19 @@
       overflow-y: auto;
     }
 
-    /* MULTIPLAYER CHAT BOX */
+    /* COLORFUL CHAT BOX (BOTTOM-LEFT, NEVER BLOCKS CARDS) */
     .chat-container {
       position: absolute;
       bottom: 12px;
-      right: 12px;
+      left: 12px;
       width: 280px;
-      background: #0b2214;
+      background: linear-gradient(145deg, #0b2214, #112e1b);
       border: 2px solid #34d399;
-      border-radius: 10px;
+      border-radius: 12px;
       z-index: 40;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.6);
     }
 
     .chat-header {
@@ -419,35 +419,70 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
     }
 
     .chat-body {
-      height: 110px;
+      height: 105px;
       overflow-y: auto;
       padding: 6px;
-      font-size: 10px;
+      font-size: 11px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 5px;
     }
 
     .chat-msg {
-      background: #1e293b;
-      padding: 4px 6px;
-      border-radius: 4px;
-      color: #e2e8f0;
+      background: rgba(30, 41, 59, 0.9);
+      border-left: 3px solid #38bdf8;
+      padding: 5px 8px;
+      border-radius: 6px;
+      color: #f1f5f9;
       word-break: break-word;
+      animation: fadeInMsg 0.3s ease;
+    }
+
+    @keyframes fadeInMsg {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .chat-msg span {
       font-weight: bold;
-      color: #38bdf8;
+      color: #facc15;
     }
 
     .chat-system-msg {
-      color: #facc15;
+      color: #34d399;
       font-style: italic;
       text-align: center;
+      font-size: 10px;
+    }
+
+    /* EMOJI SELECTOR BAR */
+    .emoji-bar {
+      display: flex;
+      gap: 3px;
+      padding: 4px 6px;
+      background: #071c10;
+      overflow-x: auto;
+      border-top: 1px solid #164e2c;
+    }
+
+    .emoji-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      padding: 2px 5px;
+      transition: transform 0.1s;
+    }
+
+    .emoji-btn:hover {
+      transform: scale(1.2);
+      background: #334155;
     }
 
     .chat-input-area {
@@ -455,24 +490,30 @@
       padding: 6px;
       gap: 4px;
       background: #092c18;
-      border-top: 1px solid #1e3a29;
+      border-bottom-left-radius: 10px;
+      border-bottom-right-radius: 10px;
     }
 
     .chat-input-area input {
       flex: 1;
       background: #1e293b;
       border: 1px solid #334155;
-      border-radius: 4px;
-      padding: 5px 8px;
+      border-radius: 6px;
+      padding: 6px 8px;
       color: white;
-      font-size: 10px;
+      font-size: 11px;
       outline: none;
     }
 
     .chat-input-area button {
-      padding: 5px 8px;
-      font-size: 10px;
+      padding: 6px 10px;
+      font-size: 11px;
       background: #3b82f6;
+      border-radius: 6px;
+      border: none;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
     }
 
     /* MODAL WINDOWS */
@@ -556,8 +597,8 @@
   <!-- TOP HEADER -->
   <div class="header-bar">
     <div>
-      <div class="brand-title">PLAYWHOT</div>
-      <div class="brand-sub">Dot.40 • <span id="dl-count">0 Downloads</span></div>
+      <div class="brand-title">PLAYWHOT [Dot.40]</div>
+      <div class="brand-sub">Streak: <span id="streak-counter">0 Wins</span> • <span id="dl-count">0 Downloads</span></div>
     </div>
     
     <div class="header-actions">
@@ -618,7 +659,7 @@
           <span class="badge-sub" id="opp-count">Waiting...</span>
         </div>
       </div>
-      <div class="rack" id="opp-rack" style="margin-top: -10px;"></div>
+      <div class="rack" id="opp-rack" style="margin-top: -6px;"></div>
     </div>
 
     <!-- CENTER PILES & REQUESTED BADGE -->
@@ -644,21 +685,33 @@
 
     <div class="log-pill" id="log-box">Welcome to Dot.40 Whot!</div>
 
-    <!-- IN-GAME CHAT BOX -->
+    <!-- COLORFUL CHAT BOX (BOTTOM-LEFT, NEVER BLOCKS CARDS) -->
     <div class="chat-container" id="chat-container">
-      <div class="chat-header" onclick="toggleChat()">💬 Game Chat <span id="chat-toggle-icon">▼</span></div>
+      <div class="chat-header" onclick="toggleChat()">💬 Colorful Chat <span id="chat-toggle-icon">▼</span></div>
       <div class="chat-body" id="chat-messages">
-        <div class="chat-system-msg">System: Live chat ready!</div>
+        <div class="chat-system-msg">System: Say hi with emojis! 👋</div>
+      </div>
+      <div class="emoji-bar">
+        <button class="emoji-btn" onclick="insertEmoji('😀')">😀</button>
+        <button class="emoji-btn" onclick="insertEmoji('🔥')">🔥</button>
+        <button class="emoji-btn" onclick="insertEmoji('👑')">👑</button>
+        <button class="emoji-btn" onclick="insertEmoji('🎯')">🎯</button>
+        <button class="emoji-btn" onclick="insertEmoji('😎')">😎</button>
+        <button class="emoji-btn" onclick="insertEmoji('😂')">😂</button>
+        <button class="emoji-btn" onclick="insertEmoji('⚡')">⚡</button>
+        <button class="emoji-btn" onclick="insertEmoji('🎉')">🎉</button>
+        <button class="emoji-btn" onclick="insertEmoji('👍')">👍</button>
+        <button class="emoji-btn" onclick="insertEmoji('💥')">💥</button>
       </div>
       <div class="chat-input-area">
-        <input type="text" id="chat-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+        <input type="text" id="chat-input" placeholder="Type message..." onkeydown="if(event.key==='Enter') sendChatMessage()">
         <button onclick="sendChatMessage()">Send</button>
       </div>
     </div>
 
     <!-- PLAYER AREA -->
     <div>
-      <div class="rack" id="player-rack" style="margin-bottom: -10px;"></div>
+      <div class="rack" id="player-rack" style="margin-bottom: -6px;"></div>
       <div class="badge badge-self">
         <div class="badge-icon" style="background: #eab308; color:#000;">👤</div>
         <div class="badge-info">
@@ -698,7 +751,7 @@
     let deck = [];
     let pHand = [];
     let cpuHand = []; 
-    let opponentActualHand = []; // Synced for PEEK cheat in multiplayer
+    let opponentActualHand = []; 
     let topCard = null;
     
     let requestedShape = null;
@@ -712,6 +765,7 @@
     let peekCPU = false;
     let isMusicPlaying = false;
     let chatVisible = true;
+    let winStreak = parseInt(localStorage.getItem('whot_streak') || 0);
 
     // Multiplayer Variables
     let peer = null;
@@ -725,18 +779,18 @@
       "classic": "Classic Rules: 1 = Hold On, 2 = Pick 2, 5 = Pick 3, 8 = Skip, 14 = General Market, 20 = Whot.",
       "20number": "20 Number Mode: Playing a 20 lets you call out a NUMBER instead of a shape!",
       "20max": "20 Max Mode: Playing a 20 lets you call out BOTH a SHAPE and a NUMBER!",
-      "peaceful": "Peaceful Mode: All numbers act as normal cards (No Pick 2/Hold On). Only 20 is Whot!",
-      "endless": "Endless Market: If you go to market, keep drawing until you get a playable card!",
-      "no-general": "No General Market: Card 14 acts like a regular number. No multi-draw market!",
-      "double": "Double Penalty: Aggressive mode! Card 2 forces Pick 4, and Card 5 forces Pick 6!",
-      "wild8": "Wild 8s: Number 8 cards act as extra Whot cards allowing shape change!",
-      "stacker": "Stacker Mode: Stack 2s to pass and multiply draw penalties!"
+      "peaceful": "Peaceful Mode: All numbers act as normal cards. Only 20 is Whot!",
+      "endless": "Endless Market: Keep drawing until you get a playable card!",
+      "no-general": "No General Market: Card 14 acts like a regular number.",
+      "double": "Double Penalty: Card 2 forces Pick 4, Card 5 forces Pick 6!",
+      "wild8": "Wild 8s: Number 8 cards act as extra Whot cards!",
+      "stacker": "Stacker Mode: Stack 2s to pass and multiply penalties!"
     };
 
-    // Initialize Download Count
     window.onload = () => {
       let dlCount = parseInt(localStorage.getItem('whot_downloads') || 345);
       document.getElementById('dl-count').innerText = `${dlCount} Downloads`;
+      document.getElementById('streak-counter').innerText = `${winStreak} Wins`;
     };
 
     function showScreenAlert(msg, color = "#facc15") {
@@ -780,9 +834,9 @@
         count += 1;
         localStorage.setItem('whot_downloads', count);
         document.getElementById('dl-count').innerText = `${count} Downloads`;
-        alert("Game downloaded successfully! You can play it offline anytime.");
+        alert("Game downloaded successfully!");
       } catch (err) {
-        alert("Download failed. You can also save the page by pressing Ctrl + S (or Cmd + S).");
+        alert("Download failed. Use Ctrl + S to save.");
       }
     }
 
@@ -791,8 +845,6 @@
         window.speechSynthesis.cancel();
         const cleanMsg = text.replace(/[\*\_\#]/g, '');
         const utterance = new SpeechSynthesisUtterance(cleanMsg);
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
         window.speechSynthesis.speak(utterance);
       }
     }
@@ -808,12 +860,20 @@
     // Chat Functions
     function toggleChat() {
       const body = document.getElementById('chat-messages');
+      const emojiBar = document.querySelector('.emoji-bar');
       const inputArea = document.querySelector('.chat-input-area');
       const icon = document.getElementById('chat-toggle-icon');
       chatVisible = !chatVisible;
       body.style.display = chatVisible ? 'flex' : 'none';
+      emojiBar.style.display = chatVisible ? 'flex' : 'none';
       inputArea.style.display = chatVisible ? 'flex' : 'none';
       icon.innerText = chatVisible ? '▼' : '▲';
+    }
+
+    function insertEmoji(emo) {
+      const input = document.getElementById('chat-input');
+      input.value += emo;
+      input.focus();
     }
 
     function sendChatMessage() {
@@ -821,7 +881,7 @@
       const text = input.value.trim();
       if (!text) return;
       
-      appendChatMessage(myPlayerName, text);
+      appendColorfulMessage(myPlayerName, text);
       
       if (gameMode === 'mp') {
         sendToPeer({ type: 'chat', sender: myPlayerName, message: text });
@@ -829,11 +889,14 @@
       input.value = '';
     }
 
-    function appendChatMessage(sender, text) {
+    function appendColorfulMessage(sender, text) {
       const box = document.getElementById('chat-messages');
       const div = document.createElement('div');
       div.className = 'chat-msg';
-      div.innerHTML = `<span>${sender}:</span> ${escapeHTML(text)}`;
+      const colors = ['#38bdf8', '#facc15', '#4ade80', '#f472b6', '#c084fc'];
+      const randColor = colors[Math.floor(Math.random() * colors.length)];
+      div.style.borderLeftColor = randColor;
+      div.innerHTML = `<span style="color:${randColor}">${sender}:</span> ${escapeHTML(text)}`;
       box.appendChild(div);
       box.scrollTop = box.scrollHeight;
     }
@@ -896,7 +959,7 @@
       document.getElementById('mp-lobby').style.display = (m === 'mp') ? 'flex' : 'none';
 
       if (m === 'pr') {
-        document.getElementById('tutorial-text').innerText = variantLessons[currentVariant];
+        document.getElementById('tutorial-text').innerText = `🔥 COACH DOT: ${variantLessons[currentVariant]} Play smart!`;
       }
 
       if (m === 'sp' || m === 'pr') {
@@ -963,7 +1026,6 @@
       });
       document.getElementById('player-count').innerText = `${pHand.length} cards remaining`;
 
-      // Opponent rack rendering with PEEK cheat support
       const cpuRack = document.getElementById('opp-rack');
       cpuRack.innerHTML = '';
       const targetOppHand = (gameMode === 'mp') ? (opponentActualHand.length > 0 ? opponentActualHand : cpuHand) : cpuHand;
@@ -1071,7 +1133,7 @@
               requestedShape: requestedShape,
               requestedNumber: requestedNumber,
               myNewHandCount: pHand.length,
-              myActualHand: pHand, // Sync hand for PEEK
+              myActualHand: pHand,
               penalty: penaltyCount,
               generalMarket: generalMarket,
               holdOn: holdOn
@@ -1093,7 +1155,7 @@
         }
 
         if (holdOn) {
-          writeLog("Opponent triggered Hold On / Suspension! Opponent plays again.");
+          writeLog("Opponent triggered Hold On! Opponent plays again.");
           pTurn = false;
           if (gameMode === 'sp') setTimeout(cpuTurn, 1500);
         } else {
@@ -1238,15 +1300,31 @@
       const playableCards = pHand.filter(c => isCardPlayable(c));
       const textSpan = document.getElementById('tutorial-text');
       if (playableCards.length > 0) {
-        textSpan.innerText = `💡 ${variantLessons[currentVariant]} You have ${playableCards.length} card(s) ready to play (glowing yellow)!`;
+        textSpan.innerText = `💡 Tip: You have ${playableCards.length} playable card(s) glowing yellow!`;
       } else {
-        textSpan.innerText = `💡 No matching cards in hand! Click the Market stack to draw.`;
+        textSpan.innerText = `💡 No matches! Click the Market stack to draw cards.`;
       }
     }
 
     function checkEnd() {
-      if (pHand.length === 0) { showScreenAlert("YOU WIN!", "#4ade80"); setTimeout(()=>{if(gameMode!=='mp') initGame();}, 2000); return true; }
-      if (cpuHand.length === 0 || (gameMode === 'mp' && opponentActualHand.length === 0)) { showScreenAlert("YOU LOSE!", "#ef4444"); setTimeout(()=>{if(gameMode!=='mp') initGame();}, 2000); return true; }
+      if (pHand.length === 0) {
+        showScreenAlert("YOU WIN! 👑", "#4ade80");
+        winStreak++;
+        localStorage.setItem('whot_streak', winStreak);
+        document.getElementById('streak-counter').innerText = `${winStreak} Wins`;
+
+        if (gameMode === 'mp') {
+          sendToPeer({ type: 'game_over', winner: myPlayerName });
+        } else {
+          setTimeout(() => initGame(), 2000);
+        }
+        return true;
+      }
+      if (cpuHand.length === 0 || (gameMode === 'mp' && opponentActualHand.length === 0)) {
+        showScreenAlert("YOU LOSE! 💀", "#ef4444");
+        if (gameMode !== 'mp') setTimeout(() => initGame(), 2000);
+        return true;
+      }
       return false;
     }
 
@@ -1278,7 +1356,7 @@
        
       peer.on('open', (id) => {
         isHost = true;
-        statusBox.innerText = `Host (${myPlayerName}) connected.\nWaiting for opponent to join...`;
+        statusBox.innerText = `Host (${myPlayerName}) connected.\nWaiting for opponent...`;
         document.getElementById('start-mp-btn').style.display = 'block';
       });
 
@@ -1359,7 +1437,10 @@
         writeLog(`${data.sender} went to market.`);
         updateUI();
       } else if (data.type === 'chat') {
-        appendChatMessage(data.sender, data.message);
+        appendColorfulMessage(data.sender, data.message);
+      } else if (data.type === 'game_over') {
+        showScreenAlert("YOU LOSE! 💀", "#ef4444");
+        writeLog(`${data.winner} won the match!`);
       } else if (data.type === 'cheat') {
         executeCheatLogic(data.code, false);
       } else if (data.type === 'cheat_refresh') {
@@ -1400,10 +1481,10 @@
       updateUI();
     }
 
-    /* ==== FULL 10-CHEAT TERMINAL SYSTEM ==== */
+    /* ==== 10-CHEAT TERMINAL SYSTEM ==== */
     function toggleCheats(show) {
       if (show && gameMode === 'pr') {
-        alert("🔒 Cheats are strictly disabled in Practice Mode!");
+        alert("🔒 Cheats are disabled in Practice Mode!");
         return;
       }
       document.getElementById('cheat-modal').style.display = show ? 'flex' : 'none';
@@ -1484,7 +1565,7 @@
           break;
         case 'SKIP':
           pTurn = !pTurn;
-          if (msg) { msg.innerText = "⏭️ SKIP: Turn manually swapped!"; msg.style.color = "#4ade80"; }
+          if (msg) { msg.innerText = "⏭️ SKIP: Turn swapped!"; msg.style.color = "#4ade80"; }
           break;
         case 'OPP5':
           for(let i=0; i<5; i++) {
