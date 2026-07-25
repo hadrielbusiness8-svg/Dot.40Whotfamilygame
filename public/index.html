@@ -171,7 +171,7 @@
       z-index: 50;
       flex-direction: column;
       gap: 12px;
-      width: 340px;
+      width: 360px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.6);
       text-align: center;
     }
@@ -199,7 +199,7 @@
       font-size: 11px;
       color: #38bdf8;
       text-align: left;
-      max-height: 90px;
+      max-height: 110px;
       overflow-y: auto;
       white-space: pre-wrap;
     }
@@ -254,8 +254,8 @@
       align-items: center;
       margin: 0 auto;
       padding: 4px;
-      min-height: 110px;
-      max-height: 140px;
+      min-height: 100px;
+      max-height: 130px;
       overflow-y: auto;
       gap: 6px;
       width: 100%;
@@ -331,8 +331,8 @@
 
     /* CARDS */
     .card {
-      width: 65px;
-      height: 98px;
+      width: 60px;
+      height: 90px;
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.3);
       position: relative;
@@ -351,7 +351,7 @@
     .card.back .watermark {
       color: rgba(255, 255, 255, 0.4);
       font-weight: 900;
-      font-size: 13px;
+      font-size: 12px;
       transform: rotate(-30deg);
       letter-spacing: 1px;
     }
@@ -371,11 +371,11 @@
       border: 2px solid #eab308;
     }
 
-    .num-top { font-size: 12px; font-weight: 900; }
-    .num-bottom { font-size: 10px; font-weight: 900; text-align: right; }
+    .num-top { font-size: 11px; font-weight: 900; }
+    .num-bottom { font-size: 9px; font-weight: 900; text-align: right; }
     .symbol-center {
       text-align: center;
-      font-size: 24px;
+      font-size: 22px;
       font-weight: normal;
       line-height: 1;
     }
@@ -383,7 +383,7 @@
     /* LOG OVERLAY */
     .log-pill {
       position: absolute;
-      bottom: 75px;
+      bottom: 12px;
       right: 12px;
       background: rgba(0, 0, 0, 0.75);
       padding: 6px 10px;
@@ -391,21 +391,24 @@
       font-size: 10px;
       color: #86efac;
       max-width: 220px;
-      max-height: 60px;
+      max-height: 50px;
       overflow-y: auto;
+      pointer-events: none;
     }
 
-    /* COLORFUL CHAT BOX (BOTTOM-LEFT, NEVER BLOCKS CARDS) */
+    /* NON-BLOCKING MULTIPLAYER CHAT BOX (RIGHT SIDEBAR) */
     .chat-container {
+      display: none; /* Only shown in multiplayer mode via JS */
       position: absolute;
-      bottom: 12px;
-      left: 12px;
-      width: 280px;
+      top: 60px;
+      right: 12px;
+      width: 240px;
+      height: calc(100% - 80px);
+      max-height: 320px;
       background: linear-gradient(145deg, #0b2214, #112e1b);
       border: 2px solid #34d399;
       border-radius: 12px;
       z-index: 40;
-      display: flex;
       flex-direction: column;
       box-shadow: 0 8px 20px rgba(0,0,0,0.6);
     }
@@ -425,7 +428,7 @@
     }
 
     .chat-body {
-      height: 105px;
+      flex: 1;
       overflow-y: auto;
       padding: 6px;
       font-size: 11px;
@@ -476,8 +479,8 @@
       border: 1px solid #334155;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 13px;
-      padding: 2px 5px;
+      font-size: 12px;
+      padding: 2px 4px;
       transition: transform 0.1s;
     }
 
@@ -507,7 +510,7 @@
     }
 
     .chat-input-area button {
-      padding: 6px 10px;
+      padding: 6px 8px;
       font-size: 11px;
       background: #3b82f6;
       border-radius: 6px;
@@ -592,7 +595,7 @@
 </head>
 <body>
 
-  <!-- BACKGROUND MUSIC (Updated Source) -->
+  <!-- BACKGROUND MUSIC -->
   <audio id="bg-music" src="https://upload.wikimedia.org/wikipedia/commons/5/5b/Retro_Game_Loop.ogg" loop></audio>
 
   <!-- TOP HEADER -->
@@ -641,14 +644,14 @@
     <!-- SPECIAL ALERT ANIMATION -->
     <div id="screen-alert">PICK TWO!</div>
 
-    <!-- MULTIPLAYER LOBBY -->
+    <!-- MULTIPLAYER LOBBY (2 to 4 Players) -->
     <div class="mp-lobby" id="mp-lobby">
-      <h3>Join/Host Room (2 Players)</h3>
+      <h3>Multiplayer Lobby (2 - 4 Players)</h3>
       <input type="text" id="mp-name" placeholder="Enter Your Name">
       <input type="text" id="mp-room" value="1" placeholder="Enter Room Number">
       <div class="player-list-box" id="mp-player-list">Players: Waiting to join...</div>
-      <button class="nav-btn" style="width: 100%; padding: 10px; font-size: 13px;" onclick="startRoomConnection()">Enter Lobby</button>
-      <button class="nav-btn" id="start-mp-btn" style="width: 100%; padding: 10px; font-size: 13px; background:#eab308; display:none;" onclick="startMultiplayerGame()">Start Match Against Opponent</button>
+      <button class="nav-btn" style="width: 100%; padding: 10px; font-size: 13px;" onclick="startRoomConnection()">Enter Room</button>
+      <button class="nav-btn" id="start-mp-btn" style="width: 100%; padding: 10px; font-size: 13px; background:#eab308; display:none;" onclick="startMultiplayerGame()">Start Match (2-4 Players)</button>
     </div>
 
     <!-- OPPONENT AREA -->
@@ -686,11 +689,11 @@
 
     <div class="log-pill" id="log-box">Welcome to Dot.40 Whot!</div>
 
-    <!-- COLORFUL CHAT BOX -->
+    <!-- MULTIPLAYER CHAT BOX (SIDEBAR - ONLY VISIBLE IN MULTIPLAYER, NON-BLOCKING) -->
     <div class="chat-container" id="chat-container">
-      <div class="chat-header" onclick="toggleChat()">💬 Colorful Chat <span id="chat-toggle-icon">▼</span></div>
+      <div class="chat-header" onclick="toggleChat()">💬 Room Chat <span id="chat-toggle-icon">▼</span></div>
       <div class="chat-body" id="chat-messages">
-        <div class="chat-system-msg">System: Say hi with emojis! 👋</div>
+        <div class="chat-system-msg">System: Room chat active! 👋</div>
       </div>
       <div class="emoji-bar">
         <button class="emoji-btn" onclick="insertEmoji('😀')">😀</button>
@@ -700,12 +703,10 @@
         <button class="emoji-btn" onclick="insertEmoji('😎')">😎</button>
         <button class="emoji-btn" onclick="insertEmoji('😂')">😂</button>
         <button class="emoji-btn" onclick="insertEmoji('⚡')">⚡</button>
-        <button class="emoji-btn" onclick="insertEmoji('🎉')">🎉</button>
         <button class="emoji-btn" onclick="insertEmoji('👍')">👍</button>
-        <button class="emoji-btn" onclick="insertEmoji('💥')">💥</button>
       </div>
       <div class="chat-input-area">
-        <input type="text" id="chat-input" placeholder="Type message..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+        <input type="text" id="chat-input" placeholder="Type..." onkeydown="if(event.key==='Enter') sendChatMessage()">
         <button onclick="sendChatMessage()">Send</button>
       </div>
     </div>
@@ -735,7 +736,7 @@
   <!-- SECRET CHEAT TERMINAL -->
   <div class="modal" id="cheat-modal">
     <div class="modal-box" style="border-color: #dc2626;">
-      <h3 style="color: #ef4444; text-align: center;">🔒 SECRET CHEAT TERMINAL (10 CODES)</h3>
+      <h3 style="color: #ef4444; text-align: center;">🔒 SECRET CHEAT TERMINAL</h3>
       <input type="text" class="cheat-input" id="cheat-code-input" placeholder="ENTER CHEAT CODE..." onkeydown="if(event.key==='Enter') submitCheat()">
       <div class="cheat-msg" id="cheat-msg">Type a secret code & hit Enter</div>
       
@@ -768,13 +769,15 @@
     let chatVisible = true;
     let winStreak = parseInt(localStorage.getItem('whot_streak') || 0);
 
-    // Multiplayer Variables
+    // Multiplayer Variables (2 to 4 Players)
     let peer = null;
     let hostConn = null;
     let clientConns = [];
+    let allRoomPlayers = [];
     let isHost = false;
     let myPlayerName = "Player 1";
     let opponentName = "Opponent";
+    let playerTurnIndex = 0;
 
     const variantLessons = {
       "classic": "Classic Rules: 1 = Hold On, 2 = Pick 2, 5 = Pick 3, 8 = Skip, 14 = General Market, 20 = Whot.",
@@ -858,7 +861,7 @@
       speakText(t);
     }
 
-    // Chat Functions
+    // Chat Functions (Multiplayer Only)
     function toggleChat() {
       const body = document.getElementById('chat-messages');
       const emojiBar = document.querySelector('.emoji-bar');
@@ -949,7 +952,6 @@
       if (gameMode !== 'mp') initGame();
     }
 
-    // FIX 2: Added Coach Dot logic
     function changeMode(m) {
       if(peer) peer.destroy();
       gameMode = m;
@@ -959,6 +961,9 @@
 
       document.getElementById('practice-banner').style.display = (m === 'pr') ? 'block' : 'none';
       document.getElementById('mp-lobby').style.display = (m === 'mp') ? 'flex' : 'none';
+      
+      // Chat only appears in multiplayer mode and non-blocking
+      document.getElementById('chat-container').style.display = (m === 'mp') ? 'flex' : 'none';
 
       if (m === 'pr') {
         document.getElementById('tutorial-text').innerText = `🔥 COACH DOT: ${variantLessons[currentVariant]} Play smart!`;
@@ -1083,7 +1088,6 @@
       }
     }
 
-    // FIX 3: Fixed the computer freezing in Practice Mode on Hold On cards
     function processCardEffectsAndTurn(c, playedByMe) {
       if (checkEnd()) return;
 
@@ -1299,7 +1303,6 @@
       }
     }
 
-    // FIX 4: Funner Practice Mode logic
     function givePracticeHint() {
       const playableCards = pHand.filter(c => isCardPlayable(c));
       const textSpan = document.getElementById('tutorial-text');
@@ -1314,7 +1317,6 @@
       }
     }
 
-    // FIX 5: Transports players to single player after match ends
     function checkEnd() {
       if (pHand.length === 0) {
         showScreenAlert("YOU WIN! 👑", "#4ade80");
@@ -1343,7 +1345,7 @@
       return false;
     }
 
-    /* ==== P2P MULTIPLAYER NETWORK LAYER ==== */
+    /* ==== P2P MULTIPLAYER NETWORK LAYER (2 to 4 Players) ==== */
     function startRoomConnection() {
       const nameInput = document.getElementById('mp-name').value.trim();
       const roomInput = document.getElementById('mp-room').value.trim();
@@ -1358,7 +1360,7 @@
 
     function initPeerConnection(roomID) {
       const statusBox = document.getElementById('mp-player-list');
-      statusBox.innerText = "Attempting to host room...";
+      statusBox.innerText = "Attempting to host room (Up to 4 players)...";
 
       if (peer) peer.destroy();
 
@@ -1371,13 +1373,14 @@
        
       peer.on('open', (id) => {
         isHost = true;
-        statusBox.innerText = `Host (${myPlayerName}) connected.\nWaiting for opponent...`;
+        allRoomPlayers = [myPlayerName];
+        statusBox.innerText = `Host (${myPlayerName}) connected.\nPlayers in room (1/4): ${myPlayerName}`;
         document.getElementById('start-mp-btn').style.display = 'block';
       });
 
       peer.on('error', (err) => {
         if (err.type === 'unavailable-id') {
-          statusBox.innerText = "Room found! Connecting to host...";
+          statusBox.innerText = "Room found! Joining host...";
           isHost = false;
           document.getElementById('start-mp-btn').style.display = 'none';
 
@@ -1387,7 +1390,7 @@
           peer.on('open', (id) => {
             hostConn = peer.connect(roomID);
             setupConnection(hostConn);
-            statusBox.innerText = "Connected to Host successfully!";
+            statusBox.innerText = "Connected to Room successfully!";
           });
         } else {
           statusBox.innerText = "Connection Error: " + err.type;
@@ -1395,6 +1398,10 @@
       });
 
       peer.on('connection', (conn) => {
+        if (clientConns.length >= 3) {
+          conn.on('open', () => conn.send({ type: 'error', msg: 'Room is full (Max 4 players)' }));
+          return;
+        }
         setupConnection(conn);
         clientConns.push(conn);
       });
@@ -1402,7 +1409,7 @@
 
     function setupConnection(conn) {
       conn.on('open', () => {
-        conn.send({ type: 'join', name: myPlayerName });
+        conn.send({ type: 'join_request', name: myPlayerName });
       });
 
       conn.on('data', (data) => {
@@ -1418,13 +1425,19 @@
       }
     }
 
-    // FIX 6: Syncs the deck and handles game over states for networking
     function handleNetworkData(data, conn) {
-      if (data.type === 'join') {
-        opponentName = data.name;
-        document.getElementById('opp-label').innerText = opponentName;
-        document.getElementById('opp-icon').innerText = "👤";
-        document.getElementById('mp-player-list').innerText += `\nJoined: ${data.name}`;
+      if (data.type === 'join_request') {
+        if (!allRoomPlayers.includes(data.name)) {
+          allRoomPlayers.push(data.name);
+        }
+        document.getElementById('mp-player-list').innerText = `Players in room (${allRoomPlayers.length}/4):\n` + allRoomPlayers.join('\n');
+        // Broadcast updated player list to all clients if host
+        if (isHost) {
+          sendToPeer({ type: 'update_players', players: allRoomPlayers });
+        }
+      } else if (data.type === 'update_players') {
+        allRoomPlayers = data.players;
+        document.getElementById('mp-player-list').innerText = `Players in room (${allRoomPlayers.length}/4):\n` + allRoomPlayers.join('\n');
       } else if (data.type === 'start_game') {
         deck = data.deck;
         topCard = data.topCard;
@@ -1436,7 +1449,7 @@
         document.getElementById('opp-label').innerText = opponentName;
         document.getElementById('opp-icon').innerText = "👤";
         document.getElementById('mp-lobby').style.display = 'none';
-        writeLog("Multiplayer match started against " + opponentName + "!");
+        writeLog("Multiplayer match started!");
         updateUI();
       } else if (data.type === 'play_card') {
         topCard = data.card;
@@ -1468,7 +1481,12 @@
     }
 
     function startMultiplayerGame() {
-      if (!isHost || clientConns.length === 0) return alert("Waiting for opponent to connect!");
+      if (!isHost) return;
+      // Check total players (host + connected clients, between 2 and 4 players)
+      const totalPlayers = 1 + clientConns.length;
+      if (totalPlayers < 2 || totalPlayers > 4) {
+        return alert("You need between 2 and 4 players to start a match!");
+      }
       
       buildDeck();
       let hostHand = deck.splice(0, 5);
@@ -1481,7 +1499,7 @@
       cpuHand = new Array(clientHand.length).fill({});
       opponentActualHand = clientHand;
       pTurn = true;
-      opponentName = document.getElementById('opp-label').innerText;
+      opponentName = clientConns[0] ? "Opponent 1" : "Opponent";
 
       sendToPeer({
         type: 'start_game',
@@ -1495,7 +1513,7 @@
       });
 
       document.getElementById('mp-lobby').style.display = 'none';
-      writeLog("Match started!");
+      writeLog("Multiplayer match started!");
       updateUI();
     }
 
