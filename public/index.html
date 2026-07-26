@@ -177,7 +177,7 @@
       animation: cardDrawAnim 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
 
-    /* MULTIPLAYER LOBBY OVERLAY */
+    /* MULTIPLAYER LOBBY */
     .mp-lobby {
       display: none;
       position: absolute;
@@ -682,14 +682,22 @@
     <!-- SPECIAL ALERT ANIMATION -->
     <div id="screen-alert">PICK TWO!</div>
 
-    <!-- MULTIPLAYER LOBBY (1v1 Duel) -->
+    <!-- MULTIPLAYER LOBBY WITH 2-4 PLAYERS SELECTION -->
     <div class="mp-lobby" id="mp-lobby">
-      <h3>Multiplayer Lobby (1v1 Duel)</h3>
+      <h3>Multiplayer Room Lobby</h3>
       <input type="text" id="mp-name" placeholder="Enter Your Name">
       <input type="text" id="mp-room" value="1" placeholder="Enter Room Number">
+      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #facc15; padding: 2px 4px;">
+        <span>Max Players (2-4):</span>
+        <select id="mp-max-players" class="variant-select" style="width: 100px; padding: 4px;">
+          <option value="2">2 Players</option>
+          <option value="3">3 Players</option>
+          <option value="4" selected>4 Players</option>
+        </select>
+      </div>
       <div class="player-list-box" id="mp-player-list">Players: Waiting to join...</div>
       <button class="nav-btn" style="width: 100%; padding: 10px; font-size: 13px;" onclick="startRoomConnection()">Enter Room</button>
-      <button class="nav-btn" id="start-mp-btn" style="width: 100%; padding: 10px; font-size: 13px; background:#eab308; display:none;" onclick="startMultiplayerGame()">Start Match (1v1)</button>
+      <button class="nav-btn" id="start-mp-btn" style="width: 100%; padding: 10px; font-size: 13px; background:#eab308; display:none;" onclick="startMultiplayerGame()">Start Match</button>
     </div>
 
     <!-- OPPONENT AREA -->
@@ -727,7 +735,7 @@
 
     <div class="log-pill" id="log-box">Welcome to Dot.40 Whot!</div>
 
-    <!-- MULTIPLAYER CHAT BOX (SIDEBAR - ONLY VISIBLE IN MULTIPLAYER, NON-BLOCKING) -->
+    <!-- NON-BLOCKING MULTIPLAYER CHAT BOX (RIGHT SIDEBAR) -->
     <div class="chat-container" id="chat-container">
       <div class="chat-header" onclick="toggleChat()">💬 Room Chat <span id="chat-toggle-icon">▼</span></div>
       <div class="chat-body" id="chat-messages">
@@ -819,12 +827,13 @@
     let myAvatar = localStorage.getItem('whot_avatar') || '👤';
     let oppAvatar = '🤖';
 
-    // Multiplayer Variables (1v1 Setup)
+    // Multiplayer Variables (2-4 Players Setup)[cite: 5]
     let peer = null;
     let hostConn = null;
     let clientConns = [];
     let allRoomPlayers = [];
     let isHost = false;
+    let maxRoomPlayers = 4;
     let myPlayerName = "Player 1";
     let opponentName = "Opponent";
 
@@ -1527,11 +1536,13 @@
       return false;
     }
 
-    /* ==== P2P MULTIPLAYER NETWORK LAYER (1v1 Setup) ==== */
+    /* ==== P2P MULTIPLAYER NETWORK LAYER (2-4 Players)[cite: 5] ==== */
     function startRoomConnection() {
       playSFX('click');
       const nameInput = document.getElementById('mp-name').value.trim();
       const roomInput = document.getElementById('mp-room').value.trim();
+      maxRoomPlayers = parseInt(document.getElementById('mp-max-players').value || 4);
+
       if (!nameInput || !roomInput) return alert("Please enter name and room number.");
 
       myPlayerName = nameInput;
@@ -1543,7 +1554,7 @@
 
     function initPeerConnection(roomID) {
       const statusBox = document.getElementById('mp-player-list');
-      statusBox.innerText = "Attempting to host room (1v1 Duel)...";
+      statusBox.innerText = `Attempting to host room (Max ${maxRoomPlayers} players)...`;
 
       if (peer) peer.destroy();
 
@@ -1557,7 +1568,7 @@
       peer.on('open', (id) => {
         isHost = true;
         allRoomPlayers = [myPlayerName];
-        statusBox.innerText = `Host (${myPlayerName}) connected.\nPlayers in room (1/2): ${myPlayerName}`;
+        statusBox.innerText = `Host (${myPlayerName}) connected.\nPlayers in room (1/${maxRoomPlayers}): ${myPlayerName}`;
         document.getElementById('start-mp-btn').style.display = 'block';
       });
 
@@ -1581,8 +1592,8 @@
       });
 
       peer.on('connection', (conn) => {
-        if (clientConns.length >= 1) { // Restricted strictly to 1v1 to match UI layout
-          conn.on('open', () => conn.send({ type: 'error', msg: 'Room is full (Max 2 players)' }));
+        if (clientConns.length >= maxRoomPlayers - 1) {
+          conn.on('open', () => conn.send({ type: 'error', msg: `Room is full (Max ${maxRoomPlayers} players)` }));
           return;
         }
         setupConnection(conn);
@@ -1614,14 +1625,15 @@
           allRoomPlayers.push(data.name);
           if (data.avatar) oppAvatar = data.avatar;
         }
-        document.getElementById('mp-player-list').innerText = `Players in room (${allRoomPlayers.length}/2):\n` + allRoomPlayers.join('\n');
+        document.getElementById('mp-player-list').innerText = `Players in room (${allRoomPlayers.length}/${maxRoomPlayers}):\n` + allRoomPlayers.join('\n');
         if (isHost) {
-          sendToPeer({ type: 'update_players', players: allRoomPlayers, avatar: myAvatar });
+          sendToPeer({ type: 'update_players', players: allRoomPlayers, avatar: myAvatar, maxPlayers: maxRoomPlayers });
         }
       } else if (data.type === 'update_players') {
         allRoomPlayers = data.players;
+        if (data.maxPlayers) maxRoomPlayers = data.maxPlayers;
         if (data.avatar) oppAvatar = data.avatar;
-        document.getElementById('mp-player-list').innerText = `Players in room (${allRoomPlayers.length}/2):\n` + allRoomPlayers.join('\n');
+        document.getElementById('mp-player-list').innerText = `Players in room (${allRoomPlayers.length}/${maxRoomPlayers}):\n` + allRoomPlayers.join('\n');
       } else if (data.type === 'update_avatar') {
         oppAvatar = data.avatar;
         document.getElementById('opp-icon').innerText = oppAvatar;
@@ -1676,8 +1688,8 @@
       playSFX('click');
       if (!isHost) return;
       const totalPlayers = 1 + clientConns.length;
-      if (totalPlayers !== 2) {
-        return alert("You need exactly 2 players to start a 1v1 duel!");
+      if (totalPlayers < 2) {
+        return alert("You need at least 2 players to start the match!");
       }
       
       buildDeck();
