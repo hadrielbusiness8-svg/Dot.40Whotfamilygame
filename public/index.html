@@ -363,6 +363,7 @@
       position: relative;
       user-select: none;
       cursor: pointer;
+      transition: box-shadow 0.3s ease;
     }
 
     .card.back {
@@ -568,6 +569,18 @@
       gap: 10px;
     }
 
+    /* ERROR SHAKE ANIMATION */
+    @keyframes errorShake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-10px); }
+      40%, 80% { transform: translateX(10px); }
+    }
+
+    .shake-error { 
+      animation: errorShake 0.4s ease; 
+      border-color: #f87171 !important; 
+    }
+
     .modal-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -669,14 +682,14 @@
     <!-- SPECIAL ALERT ANIMATION -->
     <div id="screen-alert">PICK TWO!</div>
 
-    <!-- MULTIPLAYER LOBBY (2 to 4 Players) -->
+    <!-- MULTIPLAYER LOBBY (1v1 Duel) -->
     <div class="mp-lobby" id="mp-lobby">
-      <h3>Multiplayer Lobby (2 - 4 Players)</h3>
+      <h3>Multiplayer Lobby (1v1 Duel)</h3>
       <input type="text" id="mp-name" placeholder="Enter Your Name">
       <input type="text" id="mp-room" value="1" placeholder="Enter Room Number">
       <div class="player-list-box" id="mp-player-list">Players: Waiting to join...</div>
       <button class="nav-btn" style="width: 100%; padding: 10px; font-size: 13px;" onclick="startRoomConnection()">Enter Room</button>
-      <button class="nav-btn" id="start-mp-btn" style="width: 100%; padding: 10px; font-size: 13px; background:#eab308; display:none;" onclick="startMultiplayerGame()">Start Match (2-4 Players)</button>
+      <button class="nav-btn" id="start-mp-btn" style="width: 100%; padding: 10px; font-size: 13px; background:#eab308; display:none;" onclick="startMultiplayerGame()">Start Match (1v1)</button>
     </div>
 
     <!-- OPPONENT AREA -->
@@ -700,7 +713,7 @@
       <div class="table-piles">
         <div>
           <div class="stack-label">MARKET</div>
-          <div class="card back" onclick="playerDraw()" title="Click to Draw Card">
+          <div class="card back" id="market-deck" onclick="playerDraw()" title="Click to Draw Card">
             <div class="watermark">WHOT!</div>
           </div>
         </div>
@@ -806,7 +819,7 @@
     let myAvatar = localStorage.getItem('whot_avatar') || '👤';
     let oppAvatar = '🤖';
 
-    // Multiplayer Variables (2 to 4 Players)
+    // Multiplayer Variables (1v1 Setup)
     let peer = null;
     let hostConn = null;
     let clientConns = [];
@@ -894,6 +907,13 @@
       let dlCount = parseInt(localStorage.getItem('whot_downloads') || 345);
       document.getElementById('dl-count').innerText = `${dlCount} Downloads`;
       document.getElementById('streak-counter').innerText = `${winStreak} Wins`;
+      
+      const savedVariant = localStorage.getItem('whot_saved_variant');
+      if (savedVariant) {
+        document.getElementById('whot-variant').value = savedVariant;
+        currentVariant = savedVariant;
+      }
+
       document.getElementById('my-avatar-icon').innerText = myAvatar;
       populateAvatarGrid();
     };
@@ -1086,6 +1106,7 @@
     function updateVariant() {
       playSFX('click');
       currentVariant = document.getElementById('whot-variant').value;
+      localStorage.setItem('whot_saved_variant', currentVariant); // Save to memory
       if (gameMode === 'pr') {
         document.getElementById('tutorial-text').innerText = variantLessons[currentVariant];
       }
@@ -1140,6 +1161,13 @@
       return (c.shape === topCard.shape || c.num === topCard.num);
     }
 
+    function updateDeckThickness() {
+      const market = document.getElementById('market-deck');
+      if (!market) return;
+      const thickness = Math.max(1, Math.floor(deck.length / 5)); 
+      market.style.boxShadow = `${thickness}px ${thickness}px 0px #1e3a29, 0 4px 8px rgba(0,0,0,0.3)`;
+    }
+
     function updateUI() {
       setTurnPill(pTurn ? "Your Turn" : `${opponentName}'s Turn`, pTurn ? "#34d399" : "#ef4444");
       
@@ -1192,6 +1220,8 @@
       document.getElementById('opp-icon').innerText = oppAvatar;
 
       if (gameMode === 'pr' && pTurn) givePracticeHint();
+      
+      updateDeckThickness();
     }
 
     function renderCardHTML(c, isHint = false, animClass = '') {
@@ -1497,7 +1527,7 @@
       return false;
     }
 
-    /* ==== P2P MULTIPLAYER NETWORK LAYER (2 to 4 Players) ==== */
+    /* ==== P2P MULTIPLAYER NETWORK LAYER (1v1 Setup) ==== */
     function startRoomConnection() {
       playSFX('click');
       const nameInput = document.getElementById('mp-name').value.trim();
@@ -1513,7 +1543,7 @@
 
     function initPeerConnection(roomID) {
       const statusBox = document.getElementById('mp-player-list');
-      statusBox.innerText = "Attempting to host room (Up to 4 players)...";
+      statusBox.innerText = "Attempting to host room (1v1 Duel)...";
 
       if (peer) peer.destroy();
 
@@ -1527,7 +1557,7 @@
       peer.on('open', (id) => {
         isHost = true;
         allRoomPlayers = [myPlayerName];
-        statusBox.innerText = `Host (${myPlayerName}) connected.\nPlayers in room (1/4): ${myPlayerName}`;
+        statusBox.innerText = `Host (${myPlayerName}) connected.\nPlayers in room (1/2): ${myPlayerName}`;
         document.getElementById('start-mp-btn').style.display = 'block';
       });
 
@@ -1551,8 +1581,8 @@
       });
 
       peer.on('connection', (conn) => {
-        if (clientConns.length >= 3) {
-          conn.on('open', () => conn.send({ type: 'error', msg: 'Room is full (Max 4 players)' }));
+        if (clientConns.length >= 1) { // Restricted strictly to 1v1 to match UI layout
+          conn.on('open', () => conn.send({ type: 'error', msg: 'Room is full (Max 2 players)' }));
           return;
         }
         setupConnection(conn);
@@ -1584,14 +1614,14 @@
           allRoomPlayers.push(data.name);
           if (data.avatar) oppAvatar = data.avatar;
         }
-        document.getElementById('mp-player-list').innerText = `Players in room (${allRoomPlayers.length}/4):\n` + allRoomPlayers.join('\n');
+        document.getElementById('mp-player-list').innerText = `Players in room (${allRoomPlayers.length}/2):\n` + allRoomPlayers.join('\n');
         if (isHost) {
           sendToPeer({ type: 'update_players', players: allRoomPlayers, avatar: myAvatar });
         }
       } else if (data.type === 'update_players') {
         allRoomPlayers = data.players;
         if (data.avatar) oppAvatar = data.avatar;
-        document.getElementById('mp-player-list').innerText = `Players in room (${allRoomPlayers.length}/4):\n` + allRoomPlayers.join('\n');
+        document.getElementById('mp-player-list').innerText = `Players in room (${allRoomPlayers.length}/2):\n` + allRoomPlayers.join('\n');
       } else if (data.type === 'update_avatar') {
         oppAvatar = data.avatar;
         document.getElementById('opp-icon').innerText = oppAvatar;
@@ -1638,6 +1668,7 @@
       } else if (data.type === 'cheat_refresh') {
         deck = data.newDeck;
         writeLog("Opponent used a deck refresh cheat!");
+        updateUI();
       }
     }
 
@@ -1645,8 +1676,8 @@
       playSFX('click');
       if (!isHost) return;
       const totalPlayers = 1 + clientConns.length;
-      if (totalPlayers < 2 || totalPlayers > 4) {
-        return alert("You need between 2 and 4 players to start a match!");
+      if (totalPlayers !== 2) {
+        return alert("You need exactly 2 players to start a 1v1 duel!");
       }
       
       buildDeck();
@@ -1779,7 +1810,15 @@
           showScreenAlert(isSender ? "🔥 DEVASTATING HIT!" : "🔥 DRAW FIVE HIT!", "#f87171");
           break;
         default:
-          if (isSender && msg) { msg.innerText = "❌ INVALID CODE!"; msg.style.color = "#f87171"; }
+          if (isSender && msg) { 
+            msg.innerText = "❌ INVALID CODE!"; 
+            msg.style.color = "#f87171"; 
+            const modalBox = document.querySelector('#cheat-modal .modal-box');
+            if (modalBox) {
+              modalBox.classList.add('shake-error');
+              setTimeout(() => modalBox.classList.remove('shake-error'), 400);
+            }
+          }
           return;
       }
       updateUI();
