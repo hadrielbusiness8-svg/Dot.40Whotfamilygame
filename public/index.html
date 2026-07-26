@@ -700,16 +700,9 @@
       <button class="nav-btn" id="start-mp-btn" style="width: 100%; padding: 10px; font-size: 13px; background:#eab308; display:none;" onclick="startMultiplayerGame()">Start Match</button>
     </div>
 
-    <!-- OPPONENT AREA -->
-    <div>
-      <div class="badge badge-opp" title="Opponent Info">
-        <div class="badge-icon" id="opp-icon">🤖</div>
-        <div class="badge-info">
-          <span class="badge-name" id="opp-label">Computer Pro</span>
-          <span class="badge-sub" id="opp-count">Waiting...</span>
-        </div>
-      </div>
-      <div class="rack" id="opp-rack" style="margin-top: -6px;"></div>
+    <!-- OPPONENTS CONTAINER (Dynamically generated) -->
+    <div id="opponents-container" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px;">
+      <!-- Dynamic opponents render here -->
     </div>
 
     <!-- CENTER PILES & REQUESTED BADGE -->
@@ -827,7 +820,7 @@
     let myAvatar = localStorage.getItem('whot_avatar') || '👤';
     let oppAvatar = '🤖';
 
-    // Multiplayer Variables (2-4 Players Setup)[cite: 5]
+    // Multiplayer Variables (2-4 Players Setup)
     let peer = null;
     let hostConn = null;
     let clientConns = [];
@@ -1140,15 +1133,12 @@
 
       if (m === 'sp' || m === 'pr') {
         document.getElementById('player-label').innerText = myPlayerName;
-        document.getElementById('opp-label').innerText = (m === 'pr') ? "Coach Dot 👑" : "Computer Pro";
-        document.getElementById('opp-icon').innerText = (m === 'pr') ? "👑" : "🤖";
         initGame();
       } else if (m === 'mp') {
         setTurnPill("Lobby Setup...", "#facc15");
         pHand = []; cpuHand = []; opponentActualHand = []; topCard = null; 
         requestedShape = null; requestedNumber = null;
         document.getElementById('player-count').innerText = "Waiting to start...";
-        document.getElementById('opp-count').innerText = "Waiting to start...";
         updateUI();
       }
     }
@@ -1175,6 +1165,65 @@
       if (!market) return;
       const thickness = Math.max(1, Math.floor(deck.length / 5)); 
       market.style.boxShadow = `${thickness}px ${thickness}px 0px #1e3a29, 0 4px 8px rgba(0,0,0,0.3)`;
+    }
+
+    // Dynamic Multi-Opponent Generator Logic
+    function renderOpponentsUI() {
+      const container = document.getElementById('opponents-container');
+      if (!container) return;
+      container.innerHTML = ''; 
+
+      // Single-player or Practice Mode Layout
+      if (gameMode !== 'mp') {
+        container.innerHTML = `
+          <div>
+            <div class="badge badge-opp" title="Opponent Info">
+              <div class="badge-icon" id="opp-icon">${gameMode === 'pr' ? '👑' : oppAvatar}</div>
+              <div class="badge-info">
+                <span class="badge-name" id="opp-label">${gameMode === 'pr' ? 'Coach Dot 👑' : 'Computer Pro'}</span>
+                <span class="badge-sub" id="opp-count">${cpuHand.length} cards remaining</span>
+              </div>
+            </div>
+            <div class="rack" id="opp-rack" style="margin-top: -6px;"></div>
+          </div>
+        `;
+        
+        const cpuRack = document.getElementById('opp-rack');
+        if (cpuRack) {
+            for (let i = 0; i < cpuHand.length; i++) {
+                const div = document.createElement('div');
+                const cardData = cpuHand[i];
+                if (peekCPU && cardData && cardData.shape) {
+                    div.innerHTML = renderCardHTML(cardData);
+                } else {
+                    div.className = "card back";
+                    div.innerHTML = `<div class="watermark">WHOT!</div>`;
+                }
+                cpuRack.appendChild(div);
+            }
+        }
+        return;
+      }
+
+      // Multiplayer Mode Layout (Generates elements for all connected clients)
+      const totalOpponents = Math.max(1, clientConns.length);
+      for(let i = 0; i < totalOpponents; i++) {
+        const oppNum = i + 1;
+        container.innerHTML += `
+          <div>
+            <div class="badge badge-opp">
+              <div class="badge-icon" id="opp-icon-${oppNum}">🤖</div>
+              <div class="badge-info">
+                <span class="badge-name" id="opp-label-${oppNum}">Opponent ${oppNum}</span>
+                <span class="badge-sub" id="opp-count-${oppNum}">Cards Hidden</span>
+              </div>
+            </div>
+            <div class="rack" id="opp-rack-${oppNum}" style="margin-top: -6px;">
+               <!-- Player racks hidden in MP stub until full state sync is implemented -->
+            </div>
+          </div>
+        `;
+      }
     }
 
     function updateUI() {
@@ -1210,23 +1259,8 @@
       });
       document.getElementById('player-count').innerText = `${pHand.length} cards remaining`;
 
-      const cpuRack = document.getElementById('opp-rack');
-      cpuRack.innerHTML = '';
-      const targetOppHand = (gameMode === 'mp') ? (opponentActualHand.length > 0 ? opponentActualHand : cpuHand) : cpuHand;
-      
-      for (let i = 0; i < targetOppHand.length; i++) {
-        const div = document.createElement('div');
-        const cardData = targetOppHand[i];
-        if (peekCPU && cardData && cardData.shape) {
-          div.innerHTML = renderCardHTML(cardData);
-        } else {
-          div.className = "card back";
-          div.innerHTML = `<div class="watermark">WHOT!</div>`;
-        }
-        cpuRack.appendChild(div);
-      }
-      document.getElementById('opp-count').innerText = `${targetOppHand.length} cards remaining`;
-      document.getElementById('opp-icon').innerText = oppAvatar;
+      // Call dynamic Multi-Opponent Generator UI
+      renderOpponentsUI();
 
       if (gameMode === 'pr' && pTurn) givePracticeHint();
       
@@ -1536,7 +1570,7 @@
       return false;
     }
 
-    /* ==== P2P MULTIPLAYER NETWORK LAYER (2-4 Players)[cite: 5] ==== */
+    /* ==== P2P MULTIPLAYER NETWORK LAYER (2-4 Players) ==== */
     function startRoomConnection() {
       playSFX('click');
       const nameInput = document.getElementById('mp-name').value.trim();
@@ -1546,7 +1580,6 @@
       if (!nameInput || !roomInput) return alert("Please enter name and room number.");
 
       myPlayerName = nameInput;
-      document.getElementById('player-label').innerText = myPlayerName;
 
       const roomID = `dot40-whot-room-${roomInput}`;
       initPeerConnection(roomID);
@@ -1636,7 +1669,6 @@
         document.getElementById('mp-player-list').innerText = `Players in room (${allRoomPlayers.length}/${maxRoomPlayers}):\n` + allRoomPlayers.join('\n');
       } else if (data.type === 'update_avatar') {
         oppAvatar = data.avatar;
-        document.getElementById('opp-icon').innerText = oppAvatar;
       } else if (data.type === 'start_game') {
         deck = data.deck;
         topCard = data.topCard;
@@ -1646,8 +1678,7 @@
         pTurn = data.clientTurn;
         opponentName = data.hostName;
         if (data.hostAvatar) oppAvatar = data.hostAvatar;
-        document.getElementById('opp-label').innerText = opponentName;
-        document.getElementById('opp-icon').innerText = oppAvatar;
+        
         document.getElementById('mp-lobby').style.display = 'none';
         writeLog("Multiplayer match started!");
         updateUI();
@@ -1684,6 +1715,7 @@
       }
     }
 
+    // Upgraded Multiplayer Game Initialization (2-4 Players Deals)
     function startMultiplayerGame() {
       playSFX('click');
       if (!isHost) return;
@@ -1693,32 +1725,44 @@
       }
       
       buildDeck();
-      let hostHand = deck.splice(0, 5);
-      let clientHand = deck.splice(0, 5);
       
-      topCard = deck.pop();
-      while (isSpecialCard(topCard) && deck.length > 0) { deck.unshift(topCard); topCard = deck.pop(); }
-
+      // 1. Deal host hand
+      let hostHand = deck.splice(0, 5);
       pHand = hostHand;
-      cpuHand = new Array(clientHand.length).fill({});
-      opponentActualHand = clientHand;
-      pTurn = true;
-      opponentName = clientConns[0] ? "Opponent 1" : "Opponent";
+      
+      // 2. Deal hands for EVERY connected client
+      let clientData = [];
+      clientConns.forEach(conn => {
+        let hand = deck.splice(0, 5);
+        clientData.push({ conn: conn, hand: hand });
+      });
+      
+      // 3. Setup Top Card
+      topCard = deck.pop();
+      while (isSpecialCard(topCard) && deck.length > 0) { 
+        deck.unshift(topCard); 
+        topCard = deck.pop(); 
+      }
 
-      sendToPeer({
-        type: 'start_game',
-        deck: deck,
-        topCard: topCard,
-        clientHand: clientHand,
-        hostHandCount: hostHand.length,
-        hostInitialHand: hostHand,
-        clientTurn: false,
-        hostName: myPlayerName,
-        hostAvatar: myAvatar
+      pTurn = true; 
+      renderOpponentsUI(); // Draw the new UI
+
+      // 4. Send network payload to everyone
+      clientData.forEach((client, index) => {
+        client.conn.send({
+          type: 'start_game',
+          deck: deck,
+          topCard: topCard,
+          clientHand: client.hand, // Send them their specific hand
+          hostHandCount: hostHand.length,
+          clientTurn: false,
+          hostName: myPlayerName,
+          hostAvatar: myAvatar
+        });
       });
 
       document.getElementById('mp-lobby').style.display = 'none';
-      writeLog("Multiplayer match started!");
+      writeLog(`Multiplayer match started with ${totalPlayers} players!`);
       updateUI();
     }
 
